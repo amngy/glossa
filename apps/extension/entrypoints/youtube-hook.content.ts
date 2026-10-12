@@ -4,8 +4,12 @@ import { FROM_PAGE, TO_PAGE, type CaptionTrackInfo, type ExtensionMessage, type 
 /**
  * Runs in YouTube's own JavaScript context (MAIN world) so it can:
  * - see the caption files YouTube's player downloads (they carry tokens we
- *   couldn't generate ourselves), and
- * - ask the player which caption tracks exist and switch tracks.
+ *   couldn't generate ourselves),
+ * - ask the player which caption tracks exist and switch tracks, and
+ * - when asked, copy the audio the player appends to Media Source Extensions, which arrives
+ *   seconds before it plays (look-ahead transcription, #44). No extra request: the player already
+ *   fetched these bytes. MSE in a worker would bypass this hook; YouTube used the main thread
+ *   when checked (2026-10-12).
  * It only forwards data to Glossa's content script; all logic lives there.
  */
 
@@ -89,6 +93,34 @@ export default defineContentScript({
       return originalSend.apply(this, args);
     };
 
+    // Wrapped at document_start, before the player makes its SourceBuffers; copies only while the tap is on.
+    let tapAudio = false;
+    let sourceBuffers = 0;
+    const audioBuffers = new WeakMap<SourceBuffer, { buffer: number; mime: string }>();
+    const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
+    MediaSource.prototype.addSourceBuffer = function (this: MediaSource, mime: string) {
+      const sourceBuffer = originalAddSourceBuffer.call(this, mime);
+      if (mime.startsWith('audio/')) audioBuffers.set(sourceBuffer, { buffer: sourceBuffers++, mime });
+      return sourceBuffer;
+    };
+
+    const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
+    SourceBuffer.prototype.appendBuffer = function (this: SourceBuffer, data: BufferSource) {
+      const audio = tapAudio ? audioBuffers.get(this) : undefined;
+      if (audio) {
+        try {
+          // Copied, because the player may reuse its buffer once the append is done.
+          const bytes = ArrayBuffer.isView(data)
+            ? data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+            : data.slice(0);
+          post({ type: 'audio-append', ...audio, timestampOffset: this.timestampOffset, data: bytes as ArrayBuffer });
+        } catch {
+          // Never break YouTube because of Glossa.
+        }
+      }
+      return originalAppendBuffer.call(this, data);
+    };
+
     function player(): YouTubePlayer | null {
       return document.getElementById('movie_player') as YouTubePlayer | null;
     }
@@ -131,6 +163,9 @@ export default defineContentScript({
           break;
         case 'replay':
           for (const { url, body } of captured) post({ type: 'timedtext', url, body });
+          break;
+        case 'audio-tap':
+          tapAudio = event.data.on;
           break;
       }
     });
