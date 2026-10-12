@@ -31,7 +31,16 @@ export default defineConfig({
     ...(browser === 'firefox'
       ? {
           browser_specific_settings: {
-            gecko: { id: '{4f6f1c2e-8a7b-4c39-9d0e-6b2f3a1c5e77}', strict_min_version: '128.0' },
+            gecko: {
+              id: '{4f6f1c2e-8a7b-4c39-9d0e-6b2f3a1c5e77}',
+              // 140 (Android: 142) is the first Firefox with built-in data consent, which
+              // addons.mozilla.org requires of new extensions.
+              strict_min_version: '140.0',
+              // Words you click go to Wiktionary, and words or lines to the translator or AI model you
+              // choose (README, Privacy). Nothing goes to Glossa; it has no server.
+              data_collection_permissions: { required: ['websiteContent'] },
+            },
+            gecko_android: { strict_min_version: '142.0' },
           },
         }
       : {}),

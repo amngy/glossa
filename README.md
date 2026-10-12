@@ -151,7 +151,7 @@ sends nothing to those sites.
 
 API keys stay in your browser's extension storage on this device. They aren't synced, and only Glossa's
 background script reads them. Glossa asks for permission to reach a server only when you save a setting
-that uses it.
+that uses it. The same, as a standalone policy for store listings: [PRIVACY.md](PRIVACY.md).
 
 ## Saved words and Anki
 
