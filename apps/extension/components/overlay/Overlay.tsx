@@ -5,7 +5,7 @@ import { languageOptions } from '@/lib/languages';
 import { MAX_SUBTITLE_POSITION } from '@/lib/settings';
 import { useStore, type Store } from '@/lib/store';
 import { vocabKey } from '@/lib/vocab-store';
-import type { SubtitleController } from './controller';
+import { LIVE_INDEX, type SubtitleController } from './controller';
 import { FileIcon, MoveIcon, NextIcon, PauseLineIcon, PreviousIcon, ReplayIcon, SettingsIcon, SparkleIcon, TranslateIcon } from './icons';
 import type { CardAnchor, OverlayState } from './state';
 import { WordCard } from './WordCard';
@@ -62,16 +62,19 @@ function Line({
   state,
   controller,
   anchorFor,
+  settledLength = Infinity,
 }: {
   cue: Cue;
   index: number;
   state: OverlayState;
   controller: SubtitleController;
   anchorFor: (element: Element) => CardAnchor;
+  /** Words starting at or after this many characters are provisional: grey and not clickable. */
+  settledLength?: number;
 }) {
   const lang = state.track!.lang;
   const tokens = useMemo(() => tokenize(cue.text, lang), [cue.text, lang]);
-  const wantReadings = state.settings.showReadings && baseLanguage(lang) === 'ja';
+  const wantReadings = state.settings.showReadings && baseLanguage(lang) === 'ja' && settledLength === Infinity;
   const [spans, setSpans] = useState<RubySpan[]>([]);
   useEffect(() => {
     let current = true;
@@ -93,6 +96,7 @@ function Line({
           const parts = token.text.split('\n');
           return parts.map((part, j) => [j > 0 && <br key={`${i}-${j}-br`} />, part]);
         }
+        if (start >= settledLength) return <span key={i} class="glossa-word-provisional">{token.text}</span>;
         const classes = ['glossa-word'];
         const key = vocabKey(token.text, lang);
         if (!state.knownKeys.has(key)) {
@@ -332,7 +336,9 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
 
   if (!visible) return null;
 
-  const cue = track && displayIndex >= 0 ? track.cues[displayIndex] : undefined;
+  const live = state.live;
+  const cue = live ? live.cue : track && displayIndex >= 0 ? track.cues[displayIndex] : undefined;
+  const cueIndex = live ? LIVE_INDEX : displayIndex;
   const fontSize = Math.round(Math.min(44, Math.max(15, state.playerHeight * 0.042 * settings.fontScale)));
   const canExplain = settings.ai.provider !== 'none' && cue !== undefined;
   const baseline = state.controlsHeight > 0 ? state.controlsHeight : state.playerHeight * 0.035;
@@ -356,12 +362,14 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
         <Toolbar
           state={state}
           controller={controller}
-          onExplainLine={canExplain ? (element) => controller.openLineCard(displayIndex, anchorFor(element)) : null}
+          onExplainLine={canExplain && !live ? (element) => controller.openLineCard(displayIndex, anchorFor(element)) : null}
           rootRef={rootRef}
           maxRaise={maxRaise}
         />
-        {cue && <Line cue={cue} index={displayIndex} state={state} controller={controller} anchorFor={anchorFor} />}
-        {cue && <Translation index={displayIndex} state={state} controller={controller} />}
+        {cue && (
+          <Line cue={cue} index={cueIndex} state={state} controller={controller} anchorFor={anchorFor} settledLength={live?.settledLength} />
+        )}
+        {cue && <Translation index={cueIndex} state={state} controller={controller} />}
         {state.card && <WordCard card={state.card} state={state} controller={controller} />}
       </div>
     </div>

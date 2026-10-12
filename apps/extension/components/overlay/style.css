@@ -53,6 +53,10 @@
   background: rgba(255, 255, 255, 0.24);
 }
 
+.glossa-word-provisional {
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .glossa-word-saved {
   text-decoration: underline 2px var(--glossa-saved);
   text-underline-offset: 0.2em;
