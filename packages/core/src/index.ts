@@ -7,9 +7,12 @@ export { subtitleContext, type SubtitleContextOptions } from './subtitles/contex
 
 export { tokenize, normalizeWord, type Token } from './text/segment';
 export { baseLanguage, languageName, languageFromFileName, COMMON_LANGUAGES } from './text/language';
+export { pickVoice, type VoiceLike } from './text/voice';
 
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';
+export { FallbackDictionary } from './providers/fallback-dictionary';
+export { LlmDictionary, parseDictionaryReply } from './providers/llm-dictionary';
 export { LibreTranslateTranslator, type LibreTranslateConfig } from './providers/libretranslate';
 export { DeepLTranslator, deeplTargetLanguage } from './providers/deepl';
 export {
@@ -34,7 +37,9 @@ export {
 export { LlmExplainer, LlmTranslator, cleanTranslation, stripThinking } from './providers/llm';
 export {
   TRANSLATOR_SYSTEM_PROMPT,
+  DICTIONARY_SYSTEM_PROMPT,
   TUTOR_SYSTEM_PROMPT,
+  buildDictionaryPrompt,
   buildExplainPrompt,
   buildTranslatePrompt,
   tutorSystemPrompt,

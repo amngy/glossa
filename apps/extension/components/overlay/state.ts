@@ -44,6 +44,8 @@ export interface CardState {
   translation: Async<string>;
   entries: Async<DictionaryEntry[]>;
   explanation: Async<string>;
+  /** Why Listen did nothing, e.g. no voice for the language. */
+  speechError?: string;
 }
 
 /** A subtitle track the viewer can pick in the toolbar. */

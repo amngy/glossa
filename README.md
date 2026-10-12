@@ -27,9 +27,10 @@ talks to. You can also run every one of those services yourself.
   video on this page**. Glossa uses the video's own subtitle tracks, or a `.srt` or `.vtt` file you load.
   If the page also has subtitles in your language, they become the line translation.
   See [Other sites](#other-sites).
-- **Word cards.** Click a word to see its translation, dictionary definitions from Wiktionary, and,
-  with an AI model, an explanation of what it means *in this sentence*: grammar, conjugation, idioms.
-  The model can run on your own computer, free and private.
+- **Word cards.** Click a word to see its translation, dictionary definitions from Wiktionary (or, for
+  words Wiktionary lacks, from your AI model), and, with an AI model, an explanation of what it means
+  *in this sentence*: grammar, conjugation, idioms. The model can run on your own computer, free and
+  private. The Listen button reads the word aloud with a voice for its language, if your device has one.
 - **Line translation.** Each line's translation is shown below it. You can show it, blur it until you hover,
   or hide it (<kbd>Q</kbd>).
 - **Made for studying.** The video pauses while your mouse is over the subtitles. It can also pause
@@ -139,8 +140,8 @@ browser:
 - **Wiktionary** (`en.wiktionary.org`): words you click, to look up definitions.
 - **The translator you chose**: words and lines you look at. The built-in browser translator runs on your
   device and sends nothing.
-- **The AI model you chose**, if any: the word or line you ask about, with the lines around it. The two
-  on-device options send nothing.
+- **The AI model you chose**, if any: the word or line you ask about, with the lines around it, and
+  words you click that Wiktionary has no entry for. The two on-device options send nothing.
 - **Hugging Face**, once, if you download Glossa's on-device model.
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads.
 
@@ -218,4 +219,4 @@ Glossa is free software, licensed under the [GNU Affero General Public License v
 If you run a modified version as a service for others, you must share its source.
 
 Dictionary definitions come from [Wiktionary](https://en.wiktionary.org) under
-[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each word card links to its source.
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each word card names and links its source.

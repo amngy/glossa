@@ -17,6 +17,7 @@ function Definitions({ entries, word }: { entries: Async<DictionaryEntry[]>; wor
       return <p class="glossa-muted">Dictionary unavailable: {entries.message}</p>;
     case 'done':
       if (entries.value.length === 0) return <p class="glossa-muted">No dictionary entry for “{word}”.</p>;
+      const { source } = entries.value[0]!;
       return (
         <div class="glossa-definitions">
           {entries.value.slice(0, 2).map((entry, i) => (
@@ -32,14 +33,13 @@ function Definitions({ entries, word }: { entries: Async<DictionaryEntry[]>; wor
               </ol>
             </div>
           ))}
-          <a
-            class="glossa-source"
-            href={`https://en.wiktionary.org/wiki/${encodeURIComponent(word)}`}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Wiktionary · CC BY-SA
-          </a>
+          {source.url ? (
+            <a class="glossa-source" href={source.url} target="_blank" rel="noreferrer noopener">
+              {source.name}
+            </a>
+          ) : (
+            <span class="glossa-source">{source.name}</span>
+          )}
         </div>
       );
     default:
@@ -118,7 +118,7 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
           title="Listen"
           aria-label="Listen"
           onMouseDown={keepFocus}
-          onClick={() => controller.speak(isWord ? card.word : card.sentence, card.lang)}
+          onClick={() => void controller.speak(isWord ? card.word : card.sentence, card.lang)}
         >
           <SpeakIcon />
         </button>
@@ -144,6 +144,8 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
           <CloseIcon />
         </button>
       </header>
+
+      {card.speechError && <p class="glossa-error">{card.speechError}</p>}
 
       {!isWord && (
         <p class="glossa-card-sentence" lang={card.lang}>
