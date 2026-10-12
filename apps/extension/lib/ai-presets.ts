@@ -17,9 +17,9 @@ export const OPENAI_PRESETS: OpenAIPreset[] = [
     id: 'ollama',
     label: 'Ollama',
     baseUrl: 'http://localhost:11434/v1',
-    model: 'qwen3:8b',
+    model: 'gemma4:e4b',
     needsKey: false,
-    hint: 'Free, on your computer. Install a model first, e.g. `ollama pull qwen3:8b`.',
+    hint: 'Free, on your computer. Install a model first, e.g. `ollama pull gemma4:e4b`.',
   },
   {
     id: 'lm-studio',

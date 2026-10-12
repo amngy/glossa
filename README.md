@@ -102,7 +102,7 @@ word fits. AI translation uses them the same way, and DeepL gets them as context
 | Built into the browser | Free, on your device | Chrome's own model (Gemini Nano). Chrome 138+ on a computer with 22 GB free disk space and a GPU with more than 4 GB of memory or 16 GB of RAM. Writes English, Spanish, Japanese, German and French. |
 | Glossa's on-device model | Free, on your device | Downloads [Qwen3.5](https://huggingface.co/Qwen) once and runs it on your graphics card with [WebLLM](https://github.com/mlc-ai/web-llm), even offline. Pick Standard (1.1 GB, recommended) or Large (2.4 GB, needs about 4 GB of GPU memory). Chrome and Edge only for now. |
 | Claude (Anthropic) | Pay per use | Paste an API key from [console.anthropic.com](https://console.anthropic.com). Defaults to Claude Opus 5.5. The best explanations. |
-| Ollama, LM Studio or another server | Free if you run it | Any OpenAI-compatible server: [Ollama](https://ollama.com) (`http://localhost:11434`), [LM Studio](https://lmstudio.ai) (`http://localhost:1234/v1`), OpenRouter, a vLLM server, and so on. Good models: `qwen3.5:9b` or `qwen3.5:4b`, or `gemma4:e4b`. |
+| Ollama, LM Studio or another server | Free if you run it | Any OpenAI-compatible server: [Ollama](https://ollama.com) (`http://localhost:11434`), [LM Studio](https://lmstudio.ai) (`http://localhost:1234/v1`), OpenRouter, a vLLM server, and so on. Good models: `gemma4:e4b` (best in our Japanese test), `qwen3.5:9b` or `qwen3.5:4b`. |
 
 Both sections have a **Test** button. Ollama normally refuses requests from browser extensions; Glossa
 handles that for you in Chrome and Edge. If you still get a 403 (for example in Firefox), set the environment
