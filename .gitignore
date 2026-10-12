@@ -16,3 +16,6 @@ apps/extension/public/webllm/
 
 # Translation check results (packages/core/eval)
 eval-results-*.json
+
+# Copied from onnxruntime-web at build time by apps/extension/scripts/fetch-model-libs.mjs
+apps/extension/public/ort/

@@ -35,3 +35,14 @@ for (const [name, expected] of Object.entries(FILES)) {
   writeFileSync(path, data);
   console.log(`${(data.length / 1e6).toFixed(1)} MB`);
 }
+
+// The WebAssembly runtime for speech recognition (ONNX Runtime Web, a dependency of transformers.js)
+// also has to ship inside the extension. It comes from node_modules, so the lockfile pins it.
+import { copyFileSync, realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
+
+const transformers = realpathSync(createRequire(import.meta.url).resolve('@huggingface/transformers'));
+const ortDist = join(transformers.slice(0, transformers.lastIndexOf('node_modules') + 'node_modules'.length), 'onnxruntime-web', 'dist');
+const ortOut = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'ort');
+mkdirSync(ortOut, { recursive: true });
+for (const name of ['ort-wasm-simd-threaded.mjs', 'ort-wasm-simd-threaded.wasm']) copyFileSync(join(ortDist, name), join(ortOut, name));

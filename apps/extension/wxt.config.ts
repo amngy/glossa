@@ -20,7 +20,9 @@ export default defineConfig({
       'scripting',
       ...(browser === 'firefox' ? [] : ['offscreen', 'unlimitedStorage']),
     ],
-    // The on-device model runs as WebAssembly.
+    // tabCapture is requested when the viewer first transcribes a tab's audio (see entrypoints/popup).
+    ...(browser === 'firefox' ? {} : { optional_permissions: ['tabCapture'] }),
+    // The on-device models run as WebAssembly.
     content_security_policy: {
       extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';",
     },
@@ -43,6 +45,11 @@ export default defineConfig({
   },
   vite: () => ({
     esbuild: { jsx: 'automatic', jsxImportSource: 'preact' },
+    resolve: {
+      // transformers.js asks for the WebGPU build of ONNX Runtime. Speech recognition runs on the CPU, and
+      // this smaller build avoids shipping a 28 MB WebGPU runtime.
+      alias: { 'onnxruntime-web/webgpu': 'onnxruntime-web/wasm' },
+    },
   }),
   hooks: {
     // The on-device model is Chrome-only for now, so Firefox builds skip its GPU code.
@@ -50,7 +57,7 @@ export default defineConfig({
       if (wxt.config.browser !== 'firefox') return;
       for (let i = files.length - 1; i >= 0; i--) {
         // Paths use the OS separator.
-        if (/^webllm[\\/]/.test(files[i]!.relativeDest)) files.splice(i, 1);
+        if (/^(webllm|ort)[\\/]/.test(files[i]!.relativeDest)) files.splice(i, 1);
       }
     },
   },

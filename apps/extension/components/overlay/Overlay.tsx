@@ -181,7 +181,8 @@ function Toolbar({
   const { settings, tracks, status, track } = state;
   const fileInput = useRef<HTMLInputElement>(null);
   const statusText =
-    status === 'loading'
+    state.notice ??
+    (status === 'loading'
       ? 'Loading subtitles…'
       : status === 'no-subtitles'
         ? state.canLoadFile
@@ -189,7 +190,7 @@ function Toolbar({
           : 'No subtitles for this video'
         : status === 'error'
           ? state.error
-          : null;
+          : null);
 
   return (
     <div class="glossa-toolbar" role="toolbar" aria-label="Glossa">

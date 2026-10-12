@@ -1,6 +1,9 @@
-import type { ContentScriptContext } from '#imports';
+import { browser, type ContentScriptContext } from '#imports';
 import {
+  addTranscribedCues,
   BrowserTranslator,
+  MediaClock,
+  placeSpokenLines,
   baseLanguage,
   findActiveCueIndex,
   findBestOverlap,
@@ -17,13 +20,19 @@ import {
   type SubtitleTrack,
   type TranslationRequest,
 } from '@glossa/core';
+import { isAsrEnvelope, type AsrEvent } from '@/lib/asr';
 import { detectLanguage } from '@/lib/detect-language';
 import { sendMessage } from '@/lib/messages';
 import { speak as speakAloud } from '@/lib/speech';
 import { MAX_SUBTITLE_POSITION, updateSettings, watchSettings, type Settings, type TranslationDisplay } from '@/lib/settings';
 import type { Store } from '@/lib/store';
 import { getKnown, getVocab, saveWord, setKnown, vocabKey, watchKnown, watchVocab } from '@/lib/vocab-store';
-import type { CardAnchor, CardState, LineTranslation, OverlayState } from './state';
+import type { CardAnchor, CardState, LineTranslation, OverlayState, TrackOption } from './state';
+
+/** `TrackOption.key` of the lines recognised from the video's audio. */
+export const TRANSCRIPT_KEY = 'transcript';
+/** How often the video's position is sampled to place recognised lines on its timeline. */
+const CLOCK_INTERVAL_MS = 250;
 
 const TRANSLATION_DISPLAY_ORDER: TranslationDisplay[] = ['show', 'blur', 'hide'];
 /** While paused, keep showing a line this many seconds after it ends. */
@@ -69,6 +78,11 @@ export abstract class SubtitleController {
   private resumeAfterCard = false;
   private cardSequence = 0;
   private readonly browserTranslator = new BrowserTranslator();
+  /** Lines recognised from the video's audio so far; the track is `transcript`. */
+  protected transcript: SubtitleTrack | null = null;
+  private transcribing = false;
+  private readonly clock = new MediaClock();
+  private lastClockSample = 0;
 
   constructor(
     protected readonly ctx: ContentScriptContext,
@@ -86,10 +100,15 @@ export abstract class SubtitleController {
     const setKnownKeys = (keys: string[]) => this.store.set({ knownKeys: new Set(keys) });
     const unwatchKnown = watchKnown(setKnownKeys);
     void getKnown().then(setKnownKeys);
+    const onAsr = (message: unknown) => {
+      if (isAsrEnvelope(message)) this.onAsrEvent(message.event);
+    };
+    browser.runtime.onMessage.addListener(onAsr);
     this.ctx.onInvalidated(() => {
       unwatchSettings();
       unwatchVocab();
       unwatchKnown();
+      browser.runtime.onMessage.removeListener(onAsr);
     });
 
     this.store.set({ browserTranslatorMissing: !isBrowserTranslatorSupported() });
@@ -131,6 +150,65 @@ export abstract class SubtitleController {
       this.store.get().track?.lang ??
       fallbackLanguage();
     return { lang, label: file.name, cues };
+  }
+
+  // ------------------------------------------------- recognised speech
+
+  /** The toolbar's entry for the recognised lines, once there are some. */
+  protected transcriptOption(): TrackOption | undefined {
+    return this.transcript ? { key: TRANSCRIPT_KEY, name: 'Transcribed audio' } : undefined;
+  }
+
+  /** Shows the recognised lines. */
+  protected showTranscript(): void {
+    if (this.transcript) this.setTrack(this.transcript, { trackKey: TRANSCRIPT_KEY, languageGuessed: false });
+  }
+
+  /** Called when speech recognition starts, so a site can leave its own tracks alone. */
+  protected onTranscriptionStart(): void {}
+
+  /** Forgets the recognised lines and stops listening, e.g. for a different video. */
+  protected clearTranscript(): void {
+    if (this.transcribing) void sendMessage('asrStop', null).catch(() => {});
+    this.transcribing = false;
+    this.transcript = null;
+  }
+
+  private onAsrEvent(event: AsrEvent): void {
+    switch (event.kind) {
+      case 'loading':
+        this.transcribing = true;
+        this.clock.record(Date.now(), this.video?.currentTime ?? 0, this.video?.playbackRate ?? 1);
+        this.store.set({ notice: event.message });
+        break;
+      case 'listening': {
+        this.transcribing = true;
+        this.transcript = { lang: event.language, label: 'Transcribed audio', cues: [] };
+        this.onTranscriptionStart();
+        this.showTranscript();
+        this.store.set({ notice: 'Listening. Lines show up a few seconds after they’re spoken.' });
+        break;
+      }
+      case 'lines': {
+        if (!this.transcript) break;
+        const added = placeSpokenLines(event.lines, this.clock);
+        const cues = addTranscribedCues(this.transcript.cues, added);
+        this.transcript = { ...this.transcript, cues };
+        if (this.store.get().trackKey === TRANSCRIPT_KEY) {
+          this.extendTrack(cues);
+          this.store.set({ notice: undefined });
+        }
+        break;
+      }
+      case 'error':
+        this.transcribing = false;
+        this.store.set({ status: 'error', error: event.message, notice: undefined });
+        break;
+      case 'stopped':
+        this.transcribing = false;
+        this.store.set({ notice: undefined });
+        break;
+    }
   }
 
   /** Corrects the current track's language. Only offered where `languageGuessed` is set. */
@@ -201,6 +279,10 @@ export abstract class SubtitleController {
   private readonly tick = (): void => {
     const video = this.updateFrame();
     this.video = video;
+    if (this.transcribing && video && !video.paused && performance.now() - this.lastClockSample > CLOCK_INTERVAL_MS) {
+      this.lastClockSample = performance.now();
+      this.clock.record(Date.now(), video.currentTime, video.playbackRate);
+    }
 
     const state = this.store.get();
     if (video && state.track && state.active && state.settings.enabled) {
