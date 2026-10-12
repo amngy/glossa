@@ -54,6 +54,25 @@ describe('parseWiktionaryResponse', () => {
     ]);
   });
 
+  it('drops the request-for-definition placeholder and entries left empty by it', () => {
+    const placeholder =
+      'This term needs a translation to English. Please help out and add a translation, then remove the text {{rfdef}}.';
+    const data = {
+      ja: [
+        { partOfSpeech: 'Noun', language: 'Japanese', definitions: [{ definition: 'spirit' }, { definition: placeholder }] },
+        { partOfSpeech: 'Verb', language: 'Japanese', definitions: [{ definition: placeholder }] },
+      ],
+    };
+    expect(parseWiktionaryResponse(data, 'ja')).toEqual([
+      {
+        language: 'Japanese',
+        partOfSpeech: 'Noun',
+        senses: [{ definition: 'spirit', examples: [] }],
+        source: { name: 'Wiktionary · CC BY-SA' },
+      },
+    ]);
+  });
+
   it('finds Croatian and Serbian under Wiktionary’s Serbo-Croatian code', () => {
     const sh = { sh: [{ partOfSpeech: 'Noun', language: 'Serbo-Croatian', definitions: [{ definition: 'house' }] }] };
     expect(parseWiktionaryResponse(sh, 'hr', 'kuća')[0]?.senses[0]?.definition).toBe('house');
