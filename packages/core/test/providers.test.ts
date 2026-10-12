@@ -7,6 +7,7 @@ import {
   normalizeOpenAIBaseUrl,
   OpenAICompatibleChatModel,
   parseWiktionaryResponse,
+  WiktionaryDictionary,
 } from '../src';
 
 describe('parseWiktionaryResponse', () => {
@@ -50,6 +51,22 @@ describe('parseWiktionaryResponse', () => {
   it('returns nothing for a language without entries', () => {
     expect(parseWiktionaryResponse(response, 'de')).toEqual([]);
     expect(parseWiktionaryResponse(null, 'es')).toEqual([]);
+  });
+});
+
+describe('WiktionaryDictionary', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("falls back to a Japanese phrase's first word", async () => {
+    const fetch = vi.fn(async (url: string) =>
+      url.endsWith(encodeURIComponent('映画'))
+        ? new Response(JSON.stringify({ ja: [{ partOfSpeech: 'Noun', definitions: [{ definition: 'movie' }] }] }))
+        : new Response('', { status: 404 }),
+    );
+    vi.stubGlobal('fetch', fetch);
+    const entries = await new WiktionaryDictionary().lookup('映画を', 'ja');
+    expect(entries[0]?.senses[0]?.definition).toBe('movie');
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
 

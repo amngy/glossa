@@ -16,7 +16,8 @@
     "eval": "jiti eval/translate.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.133.0"
+    "@anthropic-ai/sdk": "0.133.0",
+    "budoux": "0.9.3"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

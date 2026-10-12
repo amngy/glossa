@@ -23,6 +23,16 @@ describe('tokenize', () => {
     expect(result.join('')).toBe('私は学生です');
   });
 
+  it('keeps Japanese verbs whole by clicking phrases', () => {
+    expect(words('気をつけて帰ってね', 'ja')).toEqual(['気を', 'つけて', '帰ってね']);
+    expect(words('食べられなかった', 'ja-JP')).toEqual(['食べられなかった']);
+    expect(tokenize('どうぞ、上がってください', 'ja')).toEqual([
+      { text: 'どうぞ', isWord: true },
+      { text: '、', isWord: false },
+      { text: '上がってください', isWord: true },
+    ]);
+  });
+
   it('falls back gracefully on an invalid language tag', () => {
     expect(words('hello world', 'not a tag!')).toEqual(['hello', 'world']);
   });
