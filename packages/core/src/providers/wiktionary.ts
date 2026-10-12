@@ -1,5 +1,6 @@
 import { decodeEntities, stripTags } from '../subtitles/clean';
 import { baseLanguage } from '../text/language';
+import { firstWord } from '../text/segment';
 import { ProviderError, type Dictionary, type DictionaryEntry } from './types';
 
 const ENDPOINT = 'https://en.wiktionary.org/api/rest_v1/page/definition/';
@@ -53,8 +54,8 @@ export class WiktionaryDictionary implements Dictionary {
   readonly name = 'Wiktionary';
 
   async lookup(word: string, lang: string, signal?: AbortSignal): Promise<DictionaryEntry[]> {
-    const lower = word.toLocaleLowerCase();
-    const candidates = lower === word ? [word] : [word, lower];
+    // A Japanese click is a whole phrase (映画を); Wiktionary only has its first word (映画).
+    const candidates = [...new Set([word, word.toLocaleLowerCase(), firstWord(word, lang)])];
 
     for (const candidate of candidates) {
       const response = await fetch(ENDPOINT + encodeURIComponent(candidate), {
