@@ -1,0 +1,346 @@
+/* Styles for the overlay. They live inside a shadow root, so the site's CSS can't reach them and vice versa.
+ * Each site's entrypoint positions the shadow host itself (see its host.css). */
+
+.glossa-root {
+  --glossa-font-size: 24px;
+  --glossa-accent: #8ab4ff;
+  --glossa-saved: #f5c542;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: 'YouTube Noto', Roboto, 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.glossa-subs {
+  position: absolute;
+  left: 50%;
+  bottom: 3.5%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 88%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.glossa-subs > * {
+  pointer-events: auto;
+}
+
+/* ----- subtitle line ----- */
+
+.glossa-line {
+  font-size: var(--glossa-font-size);
+  line-height: 1.35;
+  text-align: center;
+  background: rgba(8, 8, 8, 0.78);
+  padding: 0.08em 0.4em;
+  border-radius: 6px;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.glossa-word {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.1s;
+}
+
+.glossa-word:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.glossa-word-saved {
+  text-decoration: underline 2px var(--glossa-saved);
+  text-underline-offset: 0.2em;
+}
+
+.glossa-word-selected {
+  background: rgba(138, 180, 255, 0.45);
+}
+
+.glossa-translation {
+  font: inherit;
+  font-size: calc(var(--glossa-font-size) * 0.72);
+  line-height: 1.35;
+  color: #e6e6e6;
+  text-align: center;
+  background: rgba(8, 8, 8, 0.62);
+  padding: 0.08em 0.5em;
+  border: 0;
+  border-radius: 6px;
+}
+
+.glossa-blurred {
+  filter: blur(6px);
+  transition: filter 0.15s;
+}
+
+.glossa-blurred:hover {
+  filter: none;
+}
+
+.glossa-translation-action {
+  cursor: pointer;
+  color: var(--glossa-accent);
+  font-size: calc(var(--glossa-font-size) * 0.55);
+}
+
+/* ----- toolbar ----- */
+
+.glossa-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  font-size: 12px;
+  background: rgba(28, 28, 28, 0.9);
+  border-radius: 999px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s, visibility 0.15s;
+}
+
+.glossa-subs.glossa-show-toolbar .glossa-toolbar {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* The word card opens over the toolbar's spot. */
+.glossa-subs.glossa-has-card .glossa-toolbar {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.glossa-brand {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0 6px 0 4px;
+  color: var(--glossa-accent);
+}
+
+.glossa-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  border-radius: 999px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.glossa-handle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.glossa-status {
+  color: #ccc;
+  padding: 0 6px;
+  max-width: 340px;
+}
+
+.glossa-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.glossa-tool,
+.glossa-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.glossa-tool:hover,
+.glossa-icon-button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.glossa-tool:focus-visible,
+.glossa-icon-button:focus-visible,
+.glossa-button:focus-visible,
+.glossa-select:focus-visible {
+  outline: 2px solid var(--glossa-accent);
+  outline-offset: 1px;
+}
+
+.glossa-tool-dim {
+  color: #aaa;
+}
+
+.glossa-tool-on {
+  color: var(--glossa-accent);
+}
+
+.glossa-tool-label {
+  text-transform: capitalize;
+}
+
+.glossa-select {
+  max-width: 180px;
+  height: 26px;
+  margin: 0 2px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: #2a2a2a;
+  color: #fff;
+  font: inherit;
+}
+
+/* ----- word card ----- */
+
+.glossa-card {
+  position: absolute;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+  background: #1f2125;
+  color: #f1f1f1;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: auto;
+}
+
+.glossa-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.glossa-card-word {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.glossa-card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.glossa-card-lang {
+  font-size: 12px;
+  color: #9aa0a6;
+}
+
+.glossa-spacer {
+  flex: 1;
+}
+
+.glossa-icon-button {
+  color: #c8c8c8;
+}
+
+.glossa-saved {
+  color: var(--glossa-saved);
+}
+
+.glossa-card-sentence {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.glossa-card-translation {
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: var(--glossa-accent);
+}
+
+.glossa-definitions ol {
+  margin: 2px 0 8px;
+  padding-left: 20px;
+}
+
+.glossa-definitions li {
+  margin-bottom: 2px;
+}
+
+.glossa-pos {
+  font-size: 12px;
+  font-style: italic;
+  color: #9aa0a6;
+}
+
+.glossa-example {
+  font-size: 13px;
+  font-style: italic;
+  color: #b8b8b8;
+}
+
+.glossa-source {
+  display: inline-block;
+  font-size: 11px;
+  color: #80868b;
+  text-decoration: none;
+}
+
+.glossa-source:hover {
+  text-decoration: underline;
+}
+
+.glossa-card-ai {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glossa-card-ai p {
+  margin: 0;
+}
+
+.glossa-explanation {
+  white-space: pre-wrap;
+}
+
+.glossa-button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #8ab4ff;
+  color: #10213f;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.glossa-button:hover {
+  background: #a8c7ff;
+}
+
+.glossa-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--glossa-accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.glossa-muted {
+  color: #9aa0a6;
+}
+
+.glossa-error {
+  color: #f28b82;
+}

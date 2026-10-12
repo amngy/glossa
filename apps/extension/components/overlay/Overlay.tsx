@@ -1,0 +1,324 @@
+import { baseLanguage, tokenize, type Cue } from '@glossa/core';
+import type { RefObject } from 'preact';
+import { useMemo, useRef } from 'preact/hooks';
+import { languageOptions } from '@/lib/languages';
+import { MAX_SUBTITLE_POSITION } from '@/lib/settings';
+import { useStore, type Store } from '@/lib/store';
+import { vocabKey } from '@/lib/vocab-store';
+import type { SubtitleController } from './controller';
+import { FileIcon, MoveIcon, NextIcon, PauseLineIcon, PreviousIcon, ReplayIcon, SettingsIcon, SparkleIcon, TranslateIcon } from './icons';
+import type { CardAnchor, OverlayState } from './state';
+import { WordCard } from './WordCard';
+
+/** Keeps keyboard focus on the player so YouTube's shortcuts keep working after a click. */
+const keepFocus = (event: MouseEvent) => event.preventDefault();
+
+const TRANSLATION_LABELS = { show: 'Translation: shown', blur: 'Translation: blurred until hover', hide: 'Translation: hidden' };
+
+/** Lets the viewer drag the subtitles up or down, for example off subtitles burned into the video. */
+function startMove(event: PointerEvent, controller: SubtitleController, rootRef: RefObject<HTMLDivElement>) {
+  if (event.button !== 0 || !rootRef.current) return;
+  event.preventDefault();
+  const handle = event.currentTarget as HTMLElement;
+  const height = rootRef.current.getBoundingClientRect().height || 1;
+  const startY = event.clientY;
+  const startPosition = controller.store.get().settings.subtitlePosition;
+  const positionAt = (y: number) => startPosition + ((startY - y) / height) * 100;
+  handle.setPointerCapture(event.pointerId);
+  const move = (e: PointerEvent) => controller.moveSubtitles(positionAt(e.clientY), false);
+  const end = (e: PointerEvent) => {
+    handle.removeEventListener('pointermove', move);
+    handle.removeEventListener('pointerup', end);
+    handle.removeEventListener('pointercancel', end);
+    controller.moveSubtitles(positionAt(e.clientY), true);
+  };
+  handle.addEventListener('pointermove', move);
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+}
+
+function useAnchor(subsRef: RefObject<HTMLDivElement>, rootRef: RefObject<HTMLDivElement>) {
+  return (element: Element): CardAnchor => {
+    const box = subsRef.current!.getBoundingClientRect();
+    const root = rootRef.current!.getBoundingClientRect();
+    const target = element.getBoundingClientRect();
+    const margin = 8;
+    return {
+      x: target.left - box.left + target.width / 2,
+      top: target.top - box.top,
+      bottom: target.bottom - box.top,
+      boxHeight: box.height,
+      minX: root.left - box.left + margin,
+      maxX: root.right - box.left - margin,
+      spaceAbove: target.top - root.top,
+      spaceBelow: root.bottom - target.bottom,
+    };
+  };
+}
+
+function Line({
+  cue,
+  index,
+  state,
+  controller,
+  anchorFor,
+}: {
+  cue: Cue;
+  index: number;
+  state: OverlayState;
+  controller: SubtitleController;
+  anchorFor: (element: Element) => CardAnchor;
+}) {
+  const lang = state.track!.lang;
+  const tokens = useMemo(() => tokenize(cue.text, lang), [cue.text, lang]);
+  const selected = state.card?.kind === 'word' && state.card.cueIndex === index ? state.card.word : null;
+
+  return (
+    <div class="glossa-line" lang={lang}>
+      {tokens.map((token, i) => {
+        if (!token.isWord) {
+          const parts = token.text.split('\n');
+          return parts.map((part, j) => [j > 0 && <br key={`${i}-${j}-br`} />, part]);
+        }
+        const classes = ['glossa-word'];
+        if (state.savedKeys.has(vocabKey(token.text, lang))) classes.push('glossa-word-saved');
+        if (token.text === selected) classes.push('glossa-word-selected');
+        return (
+          <span
+            key={i}
+            class={classes.join(' ')}
+            onMouseDown={keepFocus}
+            onClick={(event) => controller.openWordCard(token.text, index, anchorFor(event.currentTarget))}
+          >
+            {token.text}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function Translation({ index, state, controller }: { index: number; state: OverlayState; controller: SubtitleController }) {
+  const { settings, track } = state;
+  if (!track || settings.translationDisplay === 'hide') return null;
+  if (baseLanguage(track.lang) === baseLanguage(settings.nativeLanguage)) return null;
+
+  const fromTrack = controller.translationFromTrack(index);
+  const own = state.lineTranslations.get(index);
+  // The site's translation fills in while the viewer's own translator is still working (or failed).
+  const line =
+    fromTrack && (!controller.prefersOwnTranslator() || own?.state !== 'done')
+      ? ({ state: 'done', value: fromTrack } as const)
+      : own;
+  const blurred = settings.translationDisplay === 'blur' ? ' glossa-blurred' : '';
+
+  switch (line?.state) {
+    case 'done':
+      return <div class={`glossa-translation${blurred}`}>{line.value}</div>;
+    case 'loading':
+      return <div class="glossa-translation glossa-muted">…</div>;
+    case 'needs-click':
+      return (
+        <button class="glossa-translation glossa-translation-action" onMouseDown={keepFocus} onClick={() => controller.translateLineNow(index)}>
+          Show translation (the first time downloads a language pack)
+        </button>
+      );
+    case 'error':
+      return (
+        <button
+          class="glossa-translation glossa-translation-action"
+          title={line.message}
+          onMouseDown={keepFocus}
+          onClick={() => controller.translateLineNow(index)}
+        >
+          Translation failed: retry
+        </button>
+      );
+    default:
+      return null;
+  }
+}
+
+function Toolbar({
+  state,
+  controller,
+  onExplainLine,
+  rootRef,
+}: {
+  state: OverlayState;
+  controller: SubtitleController;
+  onExplainLine: ((element: Element) => void) | null;
+  rootRef: RefObject<HTMLDivElement>;
+}) {
+  const { settings, tracks, status, track } = state;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const statusText =
+    status === 'loading'
+      ? 'Loading subtitles…'
+      : status === 'no-subtitles'
+        ? state.canLoadFile
+          ? 'No subtitles found. Load a subtitle file:'
+          : 'No subtitles for this video'
+        : status === 'error'
+          ? state.error
+          : null;
+
+  return (
+    <div class="glossa-toolbar" role="toolbar" aria-label="Glossa">
+      <span
+        class="glossa-brand glossa-handle"
+        title="Drag to move the subtitles up or down. Double-click to put them back."
+        onPointerDown={(event) => startMove(event, controller, rootRef)}
+        onDblClick={() => controller.moveSubtitles(0, true)}
+      >
+        <MoveIcon />
+        Glossa
+      </span>
+      {statusText && <span class="glossa-status">{statusText}</span>}
+      {state.track && (
+        <>
+          <button class="glossa-tool" title="Previous line (A)" aria-label="Previous line" onMouseDown={keepFocus} onClick={() => controller.previousLine()}>
+            <PreviousIcon />
+          </button>
+          <button class="glossa-tool" title="Replay line (S)" aria-label="Replay line" onMouseDown={keepFocus} onClick={() => controller.replayLine()}>
+            <ReplayIcon />
+          </button>
+          <button class="glossa-tool" title="Next line (D)" aria-label="Next line" onMouseDown={keepFocus} onClick={() => controller.nextLine()}>
+            <NextIcon />
+          </button>
+          <span class="glossa-divider" />
+          <button
+            class={`glossa-tool${settings.translationDisplay !== 'show' ? ' glossa-tool-dim' : ''}`}
+            title={`${TRANSLATION_LABELS[settings.translationDisplay]} (Q to change)`}
+            aria-label={TRANSLATION_LABELS[settings.translationDisplay]}
+            onMouseDown={keepFocus}
+            onClick={() => controller.cycleTranslationDisplay()}
+          >
+            <TranslateIcon />
+            <span class="glossa-tool-label">{settings.translationDisplay}</span>
+          </button>
+          <button
+            class={`glossa-tool${settings.autoPause ? ' glossa-tool-on' : ''}`}
+            title={settings.autoPause ? 'Auto-pause after each line: on' : 'Auto-pause after each line: off'}
+            aria-label="Auto-pause after each line"
+            aria-pressed={settings.autoPause}
+            onMouseDown={keepFocus}
+            onClick={() => controller.toggleAutoPause()}
+          >
+            <PauseLineIcon />
+          </button>
+          {onExplainLine && (
+            <button
+              class="glossa-tool"
+              title="Explain this line with AI"
+              aria-label="Explain this line with AI"
+              onMouseDown={keepFocus}
+              onClick={(event) => onExplainLine(event.currentTarget)}
+            >
+              <SparkleIcon />
+            </button>
+          )}
+        </>
+      )}
+      {tracks.length > 1 && (
+        <select
+          class="glossa-select"
+          title="Subtitle track"
+          aria-label="Subtitle track"
+          value={state.trackKey ?? ''}
+          onChange={(event) => controller.selectTrack(event.currentTarget.value)}
+        >
+          {!state.trackKey && <option value="">Choose subtitles…</option>}
+          {tracks.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+      )}
+      {track && state.languageGuessed && (
+        <select
+          class="glossa-select"
+          title="Language of these subtitles"
+          aria-label="Language of these subtitles"
+          value={track.lang}
+          onChange={(event) => controller.setTrackLanguage(event.currentTarget.value)}
+        >
+          {languageOptions(track.lang).map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      )}
+      {state.canLoadFile && (
+        <>
+          <button
+            class="glossa-tool"
+            title="Load a subtitle file (.srt or .vtt)"
+            aria-label="Load a subtitle file"
+            onMouseDown={keepFocus}
+            onClick={() => fileInput.current?.click()}
+          >
+            <FileIcon />
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".srt,.vtt,text/vtt"
+            hidden
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = '';
+              if (file) controller.loadFile(file);
+            }}
+          />
+        </>
+      )}
+      <button class="glossa-tool" title="Glossa settings" aria-label="Glossa settings" onMouseDown={keepFocus} onClick={() => controller.openSettings()}>
+        <SettingsIcon />
+      </button>
+    </div>
+  );
+}
+
+export function Overlay({ store, controller }: { store: Store<OverlayState>; controller: SubtitleController }) {
+  const state = useStore(store);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const subsRef = useRef<HTMLDivElement>(null);
+  const anchorFor = useAnchor(subsRef, rootRef);
+
+  const { settings, track, displayIndex } = state;
+  if (!settings.enabled || !state.active || state.adShowing) return null;
+
+  const cue = track && displayIndex >= 0 ? track.cues[displayIndex] : undefined;
+  const fontSize = Math.round(Math.min(44, Math.max(15, state.playerHeight * 0.042 * settings.fontScale)));
+  const canExplain = settings.ai.provider !== 'none' && cue !== undefined;
+  const raise = Math.min(MAX_SUBTITLE_POSITION, Math.max(0, settings.subtitlePosition));
+  const box = state.box;
+  const placement = box
+    ? { inset: 'auto', left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px` }
+    : {};
+
+  return (
+    <div ref={rootRef} class="glossa-root" style={{ '--glossa-font-size': `${fontSize}px`, ...placement }}>
+      <div
+        ref={subsRef}
+        class={`glossa-subs${state.hovering || state.controlsVisible ? ' glossa-show-toolbar' : ''}${state.card ? ' glossa-has-card' : ''}`}
+        style={{ bottom: `calc(${state.controlsHeight > 0 ? `${state.controlsHeight}px` : '3.5%'} + ${raise}%)` }}
+        onMouseEnter={() => controller.hoverStart()}
+        onMouseLeave={() => controller.hoverEnd()}
+      >
+        <Toolbar
+          state={state}
+          controller={controller}
+          onExplainLine={canExplain ? (element) => controller.openLineCard(displayIndex, anchorFor(element)) : null}
+          rootRef={rootRef}
+        />
+        {cue && <Line cue={cue} index={displayIndex} state={state} controller={controller} anchorFor={anchorFor} />}
+        {cue && <Translation index={displayIndex} state={state} controller={controller} />}
+        {state.card && <WordCard card={state.card} state={state} controller={controller} />}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,11 @@
+/*
+ * The shadow host covers the viewport (or the fullscreen element) above everything on the page; the
+ * overlay inside is placed over the video. These need !important to beat WXT's
+ * `:host { all: initial !important }` reset.
+ */
+:host {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+}

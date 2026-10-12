@@ -1,0 +1,613 @@
+{
+  "from": "ja",
+  "to": "en",
+  "lines": [
+    {
+      "id": "dropped-subject",
+      "before": [
+        "田中さん、来週引っ越すんだって。"
+      ],
+      "text": "寂しくなるね。",
+      "good": [
+        "miss",
+        "lonely"
+      ],
+      "bad": []
+    },
+    {
+      "id": "iidesu-refusal",
+      "before": [
+        "お茶、もう一杯いかがですか？"
+      ],
+      "text": "あ、もういいです。",
+      "good": [
+        "fine",
+        "enough",
+        "no,? thank",
+        "i'm good",
+        "i'm ok"
+      ],
+      "bad": [
+        "it's good",
+        "that's good"
+      ]
+    },
+    {
+      "id": "kekkou-refusal",
+      "before": [
+        "袋はご利用ですか？"
+      ],
+      "text": "いえ、結構です。",
+      "good": [
+        "fine",
+        "no,? thank",
+        "don't need",
+        "i'm good",
+        "not necessary",
+        "alright",
+        "all right"
+      ],
+      "bad": [
+        "fairly",
+        "good enough"
+      ]
+    },
+    {
+      "id": "yabai-positive",
+      "before": [
+        "このラーメン食べてみて。"
+      ],
+      "text": "うわ、やばい！めっちゃうまい！",
+      "good": [
+        "amazing",
+        "insane",
+        "incredible",
+        "crazy",
+        "wow",
+        "so good",
+        "delicious"
+      ],
+      "bad": [
+        "danger",
+        "bad"
+      ]
+    },
+    {
+      "id": "split-first-half",
+      "after": [
+        "実は私の兄だったんです。"
+      ],
+      "text": "昨日駅で会った人が",
+      "good": [
+        "station"
+      ],
+      "bad": [
+        "brother"
+      ]
+    },
+    {
+      "id": "split-second-half",
+      "before": [
+        "昨日駅で会った人が"
+      ],
+      "text": "実は私の兄だったんです。",
+      "good": [
+        "brother"
+      ],
+      "bad": [
+        "station"
+      ]
+    },
+    {
+      "id": "idiom-cat",
+      "text": "猫の手も借りたいくらい忙しい。",
+      "good": [
+        "busy"
+      ],
+      "bad": [
+        "cat",
+        "paw"
+      ]
+    },
+    {
+      "id": "otsukare",
+      "before": [
+        "じゃ、今日はこれで終わりにしましょう。"
+      ],
+      "text": "お疲れ様でした！",
+      "good": [
+        "good work",
+        "great work",
+        "nice work",
+        "hard work",
+        "good job",
+        "well done",
+        "thanks",
+        "done well"
+      ],
+      "bad": [
+        "tired"
+      ]
+    },
+    {
+      "id": "yoroshiku",
+      "before": [
+        "今日から入りました佐藤です。"
+      ],
+      "text": "よろしくお願いします。",
+      "good": [
+        "nice to meet",
+        "look forward",
+        "pleasure",
+        "glad to"
+      ],
+      "bad": [
+        "please treat",
+        "favorably",
+        "kindly"
+      ]
+    },
+    {
+      "id": "kinishinaide",
+      "text": "気にしないで。",
+      "good": [
+        "don't worry",
+        "never mind",
+        "no worries",
+        "forget about it",
+        "it's fine",
+        "it's okay"
+      ],
+      "bad": [
+        "don't care"
+      ]
+    },
+    {
+      "id": "masaka",
+      "before": [
+        "犯人は彼だったんだ。"
+      ],
+      "text": "まさか…",
+      "good": [
+        "no way",
+        "can't be",
+        "impossible",
+        "you're kidding",
+        "it couldn't"
+      ],
+      "bad": []
+    },
+    {
+      "id": "ore-makasetoke",
+      "text": "俺に任せとけって！",
+      "good": [
+        "leave it to me",
+        "i got this",
+        "i've got this",
+        "count on me",
+        "trust me"
+      ],
+      "bad": []
+    },
+    {
+      "id": "asr-run-on",
+      "text": "えーとですね今日はですね京都に来ておりますはいということで早速行ってみましょう",
+      "good": [
+        "kyoto"
+      ],
+      "bad": []
+    },
+    {
+      "id": "keigo-wait",
+      "text": "少々お待ちくださいませ。",
+      "good": [
+        "moment",
+        "wait",
+        "minute",
+        "second"
+      ],
+      "bad": []
+    },
+    {
+      "id": "three-days",
+      "text": "三日後にまた来ます。",
+      "good": [
+        "three days",
+        "3 days"
+      ],
+      "bad": [
+        "third",
+        "march"
+      ]
+    },
+    {
+      "id": "hee-sounanda",
+      "before": [
+        "実は来月から海外に行くんだ。"
+      ],
+      "text": "へえ、そうなんだ。",
+      "good": [
+        "really",
+        "is that so",
+        "oh",
+        "i see",
+        "huh"
+      ],
+      "bad": []
+    },
+    {
+      "id": "mou-tabeta",
+      "text": "もう食べた？",
+      "good": [
+        "you",
+        "eaten",
+        "eat"
+      ],
+      "bad": [
+        "already ate\\.?$",
+        "i ate"
+      ]
+    },
+    {
+      "id": "chotto-refusal",
+      "before": [
+        "今夜飲みに行かない？"
+      ],
+      "text": "今夜はちょっと…",
+      "good": [
+        "can't",
+        "not",
+        "bit",
+        "tough",
+        "busy",
+        "pass",
+        "no good"
+      ],
+      "bad": [
+        "a little\\.{0,3}$"
+      ]
+    },
+    {
+      "id": "ganbatte",
+      "before": [
+        "明日、試験なんだ。"
+      ],
+      "text": "頑張ってね！",
+      "good": [
+        "good luck",
+        "you can do it",
+        "do your best",
+        "you got this",
+        "you've got this"
+      ],
+      "bad": [
+        "persevere",
+        "try hard"
+      ]
+    },
+    {
+      "id": "hara-ga-tatsu",
+      "text": "あいつの態度、本当に腹が立つ。",
+      "good": [
+        "angry",
+        "annoy",
+        "mad",
+        "piss",
+        "irritat",
+        "infuriat",
+        "nerves"
+      ],
+      "bad": [
+        "stomach",
+        "belly"
+      ]
+    },
+    {
+      "id": "itadakimasu",
+      "before": [
+        "さあ、できたよ。"
+      ],
+      "text": "いただきます！",
+      "good": [
+        "let's eat",
+        "thank",
+        "dig in",
+        "itadakimasu",
+        "bon appetit"
+      ],
+      "bad": [
+        "receive"
+      ]
+    },
+    {
+      "id": "onomatopoeia-rain",
+      "text": "外はザーザー降ってるよ。",
+      "good": [
+        "pouring",
+        "heav",
+        "cats and dogs",
+        "buckets"
+      ],
+      "bad": [
+        "zaa"
+      ]
+    },
+    {
+      "id": "name-chan",
+      "text": "ゆいちゃん、お誕生日おめでとう！",
+      "good": [
+        "yui"
+      ],
+      "bad": []
+    },
+    {
+      "id": "sensei-doctor",
+      "before": [
+        "次の方、どうぞ。",
+        "今日はどうされましたか？"
+      ],
+      "text": "先生、うちの子は大丈夫でしょうか？",
+      "good": [
+        "doctor"
+      ],
+      "bad": [
+        "teacher"
+      ]
+    },
+    {
+      "id": "ittekimasu",
+      "before": [
+        "忘れ物ない？"
+      ],
+      "text": "うん、行ってきます！",
+      "good": [
+        "i'm off",
+        "i'm going",
+        "see you",
+        "bye",
+        "heading out",
+        "i'll be going",
+        "leaving"
+      ],
+      "bad": []
+    },
+    {
+      "id": "double-negative",
+      "text": "行けないことはないけど…",
+      "good": [
+        "not that i can't",
+        "could",
+        "not impossible",
+        "i can go",
+        "can go"
+      ],
+      "bad": []
+    },
+    {
+      "id": "chatta-forgot",
+      "text": "宿題、家に忘れてきちゃった。",
+      "good": [
+        "left",
+        "forgot"
+      ],
+      "bad": []
+    },
+    {
+      "id": "aitsu-late",
+      "before": [
+        "健太はまだ来てないの？"
+      ],
+      "text": "あいつ、また遅刻か。",
+      "good": [
+        "he",
+        "that guy"
+      ],
+      "bad": [
+        "she",
+        "you"
+      ]
+    },
+    {
+      "id": "kini-naru",
+      "before": [
+        "あの二人、最近よく一緒にいるよね。"
+      ],
+      "text": "うん、なんか気になる。",
+      "good": [
+        "curious",
+        "wonder",
+        "bother",
+        "suspicious",
+        "interest",
+        "something"
+      ],
+      "bad": [
+        "become"
+      ]
+    },
+    {
+      "id": "shouganai",
+      "before": [
+        "電車、止まってるって。"
+      ],
+      "text": "しょうがないね、歩こうか。",
+      "good": [
+        "can't be helped",
+        "no choice",
+        "oh well",
+        "nothing we can do",
+        "guess we",
+        "no help for it"
+      ],
+      "bad": []
+    }
+  ],
+  "words": [
+    {
+      "id": "ki-ki-o-tsukete",
+      "text": "気",
+      "sentence": "気をつけて帰ってね。",
+      "good": [
+        "care",
+        "careful",
+        "attention",
+        "mind",
+        "watch"
+      ],
+      "bad": []
+    },
+    {
+      "id": "tsuke-ki-o-tsukete",
+      "text": "つけ",
+      "sentence": "気をつけて帰ってね。",
+      "good": [
+        "take",
+        "pay",
+        "careful",
+        "care"
+      ],
+      "bad": [
+        "attach",
+        "turn on",
+        "switch"
+      ]
+    },
+    {
+      "id": "kake-glasses",
+      "text": "かけ",
+      "sentence": "眼鏡をかけている人",
+      "good": [
+        "wear",
+        "put on"
+      ],
+      "bad": [
+        "call",
+        "hang",
+        "spend",
+        "sit",
+        "run"
+      ]
+    },
+    {
+      "id": "kake-phone",
+      "text": "かけ",
+      "sentence": "さっき母に電話をかけた。",
+      "good": [
+        "call",
+        "make",
+        "phone",
+        "dial",
+        "rang",
+        "ring"
+      ],
+      "bad": [
+        "wear",
+        "hang"
+      ]
+    },
+    {
+      "id": "kekkou-quite",
+      "text": "結構",
+      "sentence": "このカレー、結構おいしいね。",
+      "good": [
+        "quite",
+        "pretty",
+        "fairly",
+        "rather",
+        "really"
+      ],
+      "bad": [
+        "no thank",
+        "fine"
+      ]
+    },
+    {
+      "id": "kekkou-refusal",
+      "text": "結構",
+      "sentence": "いえ、結構です。",
+      "good": [
+        "fine",
+        "no",
+        "enough",
+        "alright",
+        "all right",
+        "good",
+        "okay"
+      ],
+      "bad": [
+        "quite",
+        "pretty",
+        "fairly"
+      ]
+    },
+    {
+      "id": "yabai-positive",
+      "text": "やばい",
+      "sentence": "うわ、やばい！めっちゃうまい！",
+      "before": [
+        "このラーメン食べてみて。"
+      ],
+      "good": [
+        "amazing",
+        "insane",
+        "incredible",
+        "crazy",
+        "awesome",
+        "wow",
+        "unreal"
+      ],
+      "bad": [
+        "danger",
+        "bad",
+        "risky"
+      ]
+    },
+    {
+      "id": "sensei-doctor",
+      "text": "先生",
+      "sentence": "先生、うちの子は大丈夫でしょうか？",
+      "before": [
+        "次の方、どうぞ。",
+        "今日はどうされましたか？"
+      ],
+      "good": [
+        "doctor"
+      ],
+      "bad": [
+        "teacher"
+      ]
+    },
+    {
+      "id": "chotto-refusal",
+      "text": "ちょっと",
+      "sentence": "今夜はちょっと…",
+      "before": [
+        "今夜飲みに行かない？"
+      ],
+      "good": [
+        "bit",
+        "little",
+        "not",
+        "difficult",
+        "tough",
+        "can't"
+      ],
+      "bad": []
+    },
+    {
+      "id": "hara-anger",
+      "text": "腹",
+      "sentence": "あいつの態度、本当に腹が立つ。",
+      "good": [
+        "anger",
+        "angry",
+        "temper",
+        "mad",
+        "stomach",
+        "belly",
+        "angr"
+      ],
+      "bad": []
+    }
+  ]
+}

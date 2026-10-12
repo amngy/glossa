@@ -1,0 +1,218 @@
+.options {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 20px 96px;
+}
+
+.page-header h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+}
+
+.page-header p {
+  margin: 0;
+}
+
+.section {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.section h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.section-intro {
+  margin: -6px 0 0;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+}
+
+.field-label {
+  font-weight: 600;
+}
+
+.field-hint {
+  font-size: 12px;
+}
+
+.choices {
+  display: grid;
+  gap: 8px;
+}
+
+.choice {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.choice-selected {
+  border-color: var(--accent);
+}
+
+.choice-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.choice-head input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.choice-description {
+  display: block;
+  font-size: 13px;
+}
+
+.choice-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px 38px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.pre {
+  white-space: pre-wrap;
+}
+
+.shortcuts {
+  margin: 0;
+  line-height: 2;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.words {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.words th,
+.words td {
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.words th {
+  border-top: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.small-button {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.page-footer {
+  margin-top: 28px;
+  text-align: center;
+}
+
+.save-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 32px);
+  padding: 10px 12px 10px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.model-sizes {
+  display: grid;
+  gap: 6px;
+}
+
+.model-size {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.model-size input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.block {
+  display: block;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress progress {
+  flex: 1;
+  max-width: 320px;
+  accent-color: var(--accent);
+}
+
+.sites {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sites li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
