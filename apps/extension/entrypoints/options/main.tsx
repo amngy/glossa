@@ -17,6 +17,8 @@ import { useEffect, useState } from 'preact/hooks';
 import { OPENAI_PRESETS } from '@/lib/ai-presets';
 import { languageOptions } from '@/lib/languages';
 import { BuiltInModelSetup, OnDeviceModelSetup } from './ai-models';
+import { OptionalPacks, usePackInstalled } from './packs';
+import { JAPANESE_READINGS } from '@/lib/packs';
 import { sendMessage } from '@/lib/messages';
 import { requestOrigins, requiredOrigins } from '@/lib/permissions';
 import {
@@ -323,6 +325,7 @@ function Options() {
   const [notice, setNotice] = useState<Notice>(null);
   const [translatorTest, setTranslatorTest] = useState<Notice>(null);
   const [aiTest, setAiTest] = useState<Notice>(null);
+  const readingsInstalled = usePackInstalled(JAPANESE_READINGS) === true;
 
   useEffect(() => {
     void Promise.all([getSettings(), getSecrets()]).then(([loadedSettings, loadedSecrets]) => {
@@ -603,6 +606,15 @@ function Options() {
           <input type="checkbox" checked={settings.markNewWords} onChange={(event) => change({ markNewWords: event.currentTarget.checked })} />
           Underline words I haven’t saved or marked as known
         </label>
+        <label class="switch">
+          <input
+            type="checkbox"
+            checked={settings.showReadings}
+            disabled={!readingsInstalled}
+            onChange={(event) => change({ showReadings: event.currentTarget.checked })}
+          />
+          Furigana over kanji (Japanese){readingsInstalled ? '' : ' · install the Japanese readings pack below first'}
+        </label>
         <Field label={`Subtitle size: ${Math.round(settings.fontScale * 100)}%`}>
           <input
             type="range"
@@ -630,6 +642,14 @@ function Options() {
           Shortcuts while watching: <kbd>A</kbd> previous line · <kbd>S</kbd> replay line · <kbd>D</kbd> next line ·{' '}
           <kbd>Q</kbd> show / blur / hide translation · <kbd>Esc</kbd> close the word card
         </p>
+      </Section>
+
+      <Section
+        id="packs"
+        title="Optional packs"
+        intro="Extra data that isn’t part of Glossa. Nothing is downloaded until you press Install, and it works offline afterwards."
+      >
+        <OptionalPacks />
       </Section>
 
       <VideoSites />

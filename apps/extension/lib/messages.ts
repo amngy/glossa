@@ -1,5 +1,5 @@
 import { browser } from '#imports';
-import type { DictionaryEntry, ExplainRequest, TranslationRequest } from '@glossa/core';
+import type { DictionaryEntry, ExplainRequest, ReadingToken, TranslationRequest } from '@glossa/core';
 import type { OnDeviceStatus } from './on-device';
 
 /** Requests that pages and content scripts send to the background worker. */
@@ -19,6 +19,8 @@ export interface MessageMap {
   /** Starts the download; follow it with onDeviceStatus. */
   onDeviceDownload: { request: { model: string }; response: null };
   onDeviceDelete: { request: { model: string }; response: null };
+  /** Readings for a Japanese line, from the installed "Japanese readings" pack. */
+  readings: { request: { text: string }; response: ReadingToken[] };
 }
 
 export type MessageType = keyof MessageMap;

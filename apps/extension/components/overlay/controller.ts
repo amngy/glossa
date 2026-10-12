@@ -9,9 +9,11 @@ import {
   languageFromFileName,
   languageName,
   parseTextSubtitles,
+  rubySpans,
   subtitleContext,
   type Cue,
   type ExplainRequest,
+  type RubySpan,
   type SubtitleTrack,
   type TranslationRequest,
 } from '@glossa/core';
@@ -552,6 +554,23 @@ export abstract class SubtitleController {
       sentenceTranslation: this.lineTranslationText(card.cueIndex),
       source: { ...this.source(time), time },
     });
+  }
+
+  private readonly readingCache = new Map<string, Promise<RubySpan[]>>();
+
+  /** Where furigana goes in a Japanese line, from the installed readings pack; empty if it can't be had. */
+  readingSpans(text: string): Promise<RubySpan[]> {
+    let spans = this.readingCache.get(text);
+    if (!spans) {
+      spans = sendMessage('readings', { text })
+        .then((tokens) => rubySpans(text, tokens))
+        .catch(() => {
+          this.readingCache.delete(text);
+          return [];
+        });
+      this.readingCache.set(text, spans);
+    }
+    return spans;
   }
 
   async toggleKnown(): Promise<void> {

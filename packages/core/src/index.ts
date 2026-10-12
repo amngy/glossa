@@ -9,6 +9,7 @@ export { subtitleContext, type SubtitleContextOptions } from './subtitles/contex
 export { tokenize, normalizeWord, type Token } from './text/segment';
 export { baseLanguage, languageName, languageFromFileName, COMMON_LANGUAGES } from './text/language';
 export { pickVoice, type VoiceLike } from './text/voice';
+export { rubyIn, rubyParts, rubySpans, type ReadingToken, type RubyPart, type RubySpan } from './text/ruby';
 
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';

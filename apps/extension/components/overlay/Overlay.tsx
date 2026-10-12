@@ -1,4 +1,4 @@
-import { baseLanguage, tokenize, type Cue } from '@glossa/core';
+import { baseLanguage, rubyIn, tokenize, type Cue, type RubySpan } from '@glossa/core';
 import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { languageOptions } from '@/lib/languages';
@@ -71,11 +71,24 @@ function Line({
 }) {
   const lang = state.track!.lang;
   const tokens = useMemo(() => tokenize(cue.text, lang), [cue.text, lang]);
+  const wantReadings = state.settings.showReadings && baseLanguage(lang) === 'ja';
+  const [spans, setSpans] = useState<RubySpan[]>([]);
+  useEffect(() => {
+    let current = true;
+    setSpans([]);
+    if (wantReadings) void controller.readingSpans(cue.text).then((found) => current && setSpans(found));
+    return () => {
+      current = false;
+    };
+  }, [cue.text, wantReadings]);
+  let offset = 0;
   const selected = state.card?.kind === 'word' && state.card.cueIndex === index ? state.card.word : null;
 
   return (
     <div class="glossa-line" lang={lang}>
       {tokens.map((token, i) => {
+        const start = offset;
+        offset += token.text.length;
         if (!token.isWord) {
           const parts = token.text.split('\n');
           return parts.map((part, j) => [j > 0 && <br key={`${i}-${j}-br`} />, part]);
@@ -94,7 +107,16 @@ function Line({
             onMouseDown={keepFocus}
             onClick={(event) => controller.openWordCard(token.text, index, anchorFor(event.currentTarget))}
           >
-            {token.text}
+            {rubyIn(cue.text, spans, start, offset).map((part, j) =>
+              part.ruby ? (
+                <ruby key={j}>
+                  {part.text}
+                  <rt>{part.ruby}</rt>
+                </ruby>
+              ) : (
+                part.text
+              ),
+            )}
           </span>
         );
       })}

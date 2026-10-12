@@ -1,4 +1,5 @@
 import { browser } from '#imports';
+import { japaneseReadings } from '@/lib/japanese-readings';
 import { isOffscreenEnvelope, type OffscreenReply, type WorkerReply, type WorkerRequest } from '@/lib/on-device';
 
 /**
@@ -23,8 +24,16 @@ worker.onerror = (event) => {
 
 browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
   if (sender.id !== browser.runtime.id || !isOffscreenEnvelope(message)) return;
+  const { request } = message;
+  if (request.type === 'readings') {
+    japaneseReadings(request.text).then(
+      (data) => sendResponse({ ok: true, data } satisfies OffscreenReply),
+      (error: unknown) => sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) } satisfies OffscreenReply),
+    );
+    return true;
+  }
   const id = nextId++;
   pending.set(id, sendResponse);
-  worker.postMessage({ id, request: message.request } satisfies WorkerRequest);
+  worker.postMessage({ id, request } satisfies WorkerRequest);
   return true;
 });

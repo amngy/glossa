@@ -20,9 +20,15 @@ export type OffscreenRequest =
   | { type: 'complete'; model: string; system: string; prompt: string }
   | { type: 'delete'; model: string };
 
+/** Japanese readings come from the same offscreen document but not from the model worker. */
+export interface ReadingsRequest {
+  type: 'readings';
+  text: string;
+}
+
 export interface OffscreenEnvelope {
   glossaOffscreen: true;
-  request: OffscreenRequest;
+  request: OffscreenRequest | ReadingsRequest;
 }
 
 export type OffscreenReply = { ok: true; data: unknown } | { ok: false; error: string };
