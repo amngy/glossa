@@ -1,5 +1,5 @@
 import { browser, defineBackground } from '#imports';
-import { LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
+import { LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
 import { handleMessages } from '@/lib/messages';
 import { askOffscreen } from '@/lib/on-device-client';
 import { createChatModel, createTranslator, describeNetworkError } from '@/lib/providers';
@@ -54,6 +54,14 @@ export default defineBackground(() => {
 
     lookup({ word, lang }) {
       return cached(`d|${lang}|${word}`, () => dictionary.lookup(word, lang));
+    },
+
+    // On request only: it sends the word to the viewer's AI model, for what Wiktionary lacks.
+    async lookupAi({ word, lang }) {
+      const [model, settings] = await Promise.all([createChatModel(), getSettings()]);
+      if (!model) throw new Error('Choose an AI provider in Glossa’s settings.');
+      const key = `da|${model.name}|${settings.nativeLanguage}|${lang}|${word}`;
+      return cached(key, () => new LlmDictionary(model, settings.nativeLanguage).lookup(word, lang));
     },
 
     async explain(request) {

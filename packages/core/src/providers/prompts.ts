@@ -46,8 +46,8 @@ const ANSWER_IN: Record<string, string> = {
 };
 
 /** Asks for the answer in `lang`, in English and, when known, in that language too. */
-function answerIn(lang: string): string {
-  const instruction = `Write the explanation in ${languageName(lang)}.`;
+function answerIn(lang: string, what = 'explanation'): string {
+  const instruction = `Write the ${what} in ${languageName(lang)}.`;
   const native = ANSWER_IN[baseLanguage(lang)];
   return native ? `${instruction} ${native}` : instruction;
 }
@@ -60,6 +60,23 @@ export const TRANSLATOR_SYSTEM_PROMPT = `You are a professional subtitle transla
 - A line can be just part of a sentence that goes on in the next line. Then translate only that part.
 - Keep people's names, written in the target language's script.
 Reply with the translation only: no quotes, notes, explanations or alternatives.`;
+
+export const DICTIONARY_SYSTEM_PROMPT = `You are a dictionary built into a subtitle reader. A learner tapped a word and wants its dictionary entry.
+Reply with one line per common meaning, each written as: part of speech | short definition
+- Most words need one line; never more than three. Don't add lines for grammar notes.
+- If the word is an inflected form (a conjugated verb, a plural, a case ending), give its base form first: "verb | form of <base form>: <meaning of the base form>". Work out the base form carefully from the word's ending.
+- Example for Spanish "dijeron", in English: verb | form of decir: to say
+- Keep each definition under 15 words.
+- If you don't know the word, reply with "unknown".
+No other text, no Markdown.`;
+
+export function buildDictionaryPrompt(word: string, lang: string, definitionLanguage: string): string {
+  return [
+    `Language: ${languageName(lang)}`,
+    `Word: "${word}"`,
+    answerIn(definitionLanguage, 'definitions'),
+  ].join('\n');
+}
 
 function quoted(label: string, lines: readonly string[] | undefined): string[] {
   return lines?.length ? [label, ...lines.map((line) => `"${line}"`)] : [];

@@ -6,6 +6,7 @@ import {
   findBestOverlap,
   findCueIndexAtOrBefore,
   isBrowserTranslatorSupported,
+  languageName,
   subtitleContext,
   type Cue,
   type ExplainRequest,
@@ -13,6 +14,7 @@ import {
   type TranslationRequest,
 } from '@glossa/core';
 import { sendMessage } from '@/lib/messages';
+import { speak as speakAloud } from '@/lib/speech';
 import { MAX_SUBTITLE_POSITION, updateSettings, watchSettings, type Settings, type TranslationDisplay } from '@/lib/settings';
 import type { Store } from '@/lib/store';
 import { getVocab, saveWord, vocabKey, watchVocab } from '@/lib/vocab-store';
@@ -427,6 +429,18 @@ export abstract class SubtitleController {
     );
   }
 
+  /** Defines the card's word with the AI model, after the dictionary had no entry. */
+  lookupWithAi(): void {
+    const { card } = this.store.get();
+    if (!card) return;
+    const id = card.id;
+    this.updateCard(id, { aiLookup: true, entries: { state: 'loading' } });
+    sendMessage('lookupAi', { word: card.word, lang: card.lang }).then(
+      (value) => this.updateCard(id, { entries: { state: 'done', value } }),
+      (error: unknown) => this.updateCard(id, { entries: { state: 'error', message: errorMessage(error) } }),
+    );
+  }
+
   /** Opens a card explaining the whole line with AI. */
   openLineCard(cueIndex: number, anchor: CardAnchor): void {
     const { track } = this.store.get();
@@ -499,13 +513,14 @@ export abstract class SubtitleController {
     });
   }
 
-  speak(text: string, lang: string): void {
-    if (!('speechSynthesis' in window)) return;
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = 0.9;
-    speechSynthesis.speak(utterance);
+  async speak(text: string, lang: string): Promise<void> {
+    const id = this.store.get().card?.id;
+    if (id === undefined) return;
+    this.updateCard(id, { speechError: undefined });
+    if (await speakAloud(text, lang)) return;
+    this.updateCard(id, {
+      speechError: `No ${languageName(lang)} voice is installed. Add one in your system’s speech settings.`,
+    });
   }
 
   // --------------------------------------------------------------- settings
