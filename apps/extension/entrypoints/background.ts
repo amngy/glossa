@@ -1,5 +1,6 @@
 import { browser, defineBackground } from '#imports';
 import { LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
+import { CompanionSpeechModel } from '@/lib/companion';
 import { isAsrEnvelope } from '@/lib/asr';
 import { handleMessages } from '@/lib/messages';
 import { askOffscreen } from '@/lib/on-device-client';
@@ -11,6 +12,7 @@ import { syncVideoSites, watchVideoSites } from '@/lib/video-sites';
 export default defineBackground(() => {
   /** The tab whose audio is being transcribed. Lost if the browser restarts this worker; the popup then offers Start again. */
   let asrTab: number | null = null;
+  const companion = new CompanionSpeechModel();
   const dictionary = new WiktionaryDictionary();
   // Best effort: the browser may stop this worker when idle, which clears the cache.
   const cache = new LruCache<string, Promise<unknown>>(1000);
@@ -115,6 +117,7 @@ export default defineBackground(() => {
       await askOffscreen({ type: 'asr-stop' });
       return null;
     },
+    companionPing: () => companion.ping(),
     asrStatus: async () => ({ tabId: asrTab }),
   });
 

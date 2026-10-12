@@ -21,6 +21,14 @@ export {
   type Utterance,
 } from './asr/transcribe';
 
+export {
+  COMPANION_HOST,
+  encodePcm,
+  parseCompanionReply,
+  type CompanionReply,
+  type CompanionRequest,
+} from './asr/companion';
+
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';
 export { LlmDictionary, parseDictionaryReply } from './providers/llm-dictionary';

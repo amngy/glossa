@@ -25,6 +25,8 @@ export interface MessageMap {
   /** Starts recognising the speech in a tab's audio. `streamId` comes from tabCapture.getMediaStreamId. */
   asrStart: { request: { tabId: number; streamId: string; language: string; pack: string }; response: null };
   asrStop: { request: null; response: null };
+  /** Starts the desktop companion if needed and returns its engine name. Needs the nativeMessaging permission. */
+  companionPing: { request: null; response: string };
   asrStatus: { request: null; response: AsrStatus };
 }
 
