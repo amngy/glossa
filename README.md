@@ -56,7 +56,7 @@ talks to. You can also run every one of those services yourself.
 
 ## Install
 
-Glossa isn't in the browser extension stores yet, so for now you build it from source. It takes about
+Glossa isn't published to any browser extension store: you build it from source. It takes about
 two minutes.
 
 You need [Node.js](https://nodejs.org) 22.13 or newer, and [pnpm](https://pnpm.io/installation) 11
@@ -74,8 +74,7 @@ click **Load unpacked**, and choose `apps/extension/.output/chrome-mv3`.
 
 **Firefox:** run `pnpm --filter @glossa/extension build:firefox`. Then open `about:debugging#/runtime/this-firefox`,
 click **Load Temporary Add-on**, and choose `apps/extension/.output/firefox-mv3/manifest.json`.
-Firefox removes temporary add-ons when it closes. Permanent installs will come with the add-on store
-listing.
+Firefox removes temporary add-ons when it closes, so load it again after a restart.
 
 The settings page opens when you install Glossa. Pick your native language, then open any YouTube video
 that has subtitles.
@@ -173,7 +172,7 @@ pnpm test           # unit tests (Vitest)
 pnpm --filter @glossa/core eval qwen3:8b   # Japanese→English translation check against a local Ollama model
 pnpm typecheck
 pnpm build
-pnpm --filter @glossa/extension zip   # store-ready .zip
+pnpm --filter @glossa/extension zip   # a .zip of the build
 ```
 
 `pnpm dev` uses a fresh browser profile. To use a different browser binary or a profile of your own,
@@ -211,7 +210,9 @@ hidden while Glossa is on.
 ## Roadmap
 
 Open work is tracked in [GitHub Issues](https://github.com/amngy/glossa/issues): more sites,
-a web player, mobile, learning tools and store listings.
+a web player, mobile, learning tools, local speech recognition for videos without subtitles, reading aids
+(furigana, pinyin) and better local models. Every feature keeps a local-first path; remote servers are
+opt-in. Glossa won't be published to the extension stores.
 
 Ideas and help are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
