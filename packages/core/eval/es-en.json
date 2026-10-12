@@ -1,0 +1,123 @@
+{
+  "from": "es",
+  "to": "en",
+  "lines": [
+    {
+      "id": "no-hay-de-que",
+      "before": ["Muchísimas gracias por la ayuda."],
+      "text": "No hay de qué.",
+      "good": ["you're welcome", "you are welcome", "no problem", "don't mention", "not at all", "my pleasure"],
+      "bad": ["there is no", "nothing of what"]
+    },
+    {
+      "id": "hecho-polvo",
+      "text": "Estoy hecho polvo después del viaje.",
+      "good": ["exhausted", "wiped", "worn out", "beat", "dead tired", "shattered", "drained", "wrecked", "knackered"],
+      "bad": ["made dust", "powder", "made of dust"]
+    },
+    {
+      "id": "embarazada",
+      "text": "Ana está embarazada.",
+      "good": ["pregnant"],
+      "bad": ["embarrassed"]
+    },
+    {
+      "id": "constipado",
+      "text": "Estoy muy constipado, no puedo respirar.",
+      "good": ["cold", "congested", "stuffy", "stuffed", "blocked", "stuffed up"],
+      "bad": ["constipated"]
+    },
+    {
+      "id": "ser-aburrido",
+      "text": "Mi hermano es aburrido.",
+      "good": ["boring", "dull"],
+      "bad": ["is bored", "he's bored"]
+    },
+    {
+      "id": "estar-aburrido",
+      "text": "Mi hermano está aburrido.",
+      "good": ["bored"],
+      "bad": ["is boring", "he's boring"]
+    },
+    {
+      "id": "dropped-subject",
+      "before": ["¿Y María? ¿Por qué no está aquí?"],
+      "text": "Llegó tarde, como siempre.",
+      "good": ["she"],
+      "bad": ["\\bhe\\b", "\\bit\\b"]
+    },
+    {
+      "id": "ojala",
+      "text": "Ojalá que no llueva mañana.",
+      "good": ["hope", "wish"],
+      "bad": []
+    },
+    {
+      "id": "hay-que",
+      "text": "Hay que irse ya, es tarde.",
+      "good": ["have to", "need to", "must", "should", "got to", "time to", "gotta", "better"],
+      "bad": []
+    },
+    {
+      "id": "cae-gordo",
+      "text": "Me cae gordo ese tipo.",
+      "good": ["can't stand", "can’t stand", "don't like", "don’t like", "annoy", "wrong way", "dislike", "nerves", "irritat", "rubs me"],
+      "bad": ["fat"]
+    },
+    {
+      "id": "por-ti",
+      "text": "Lo hice por ti.",
+      "good": ["for you", "because of you", "your sake", "on your behalf"],
+      "bad": []
+    },
+    {
+      "id": "usted-request",
+      "before": ["Disculpe, señor."],
+      "text": "¿Podría ayudarme, por favor?",
+      "good": ["could you", "can you", "would you", "help me"],
+      "bad": []
+    },
+    {
+      "id": "dar-a-luz",
+      "text": "Ella dio a luz a gemelos.",
+      "good": ["gave birth", "twins"],
+      "bad": ["gave light"]
+    },
+    {
+      "id": "echar-de-menos",
+      "text": "Te echo de menos.",
+      "good": ["miss you"],
+      "bad": ["throw", "\\bless\\b"]
+    }
+  ],
+  "words": [
+    {
+      "id": "echo",
+      "text": "echo",
+      "sentence": "Te echo de menos.",
+      "good": ["miss"],
+      "bad": ["\\becho\\b"]
+    },
+    {
+      "id": "polvo",
+      "text": "polvo",
+      "sentence": "Estoy hecho polvo después del viaje.",
+      "good": ["exhaust", "wiped", "worn", "dead", "beat", "wreck", "shatter", "drain"],
+      "bad": ["dust", "powder"]
+    },
+    {
+      "id": "luz",
+      "text": "luz",
+      "sentence": "Ella dio a luz a gemelos.",
+      "good": ["birth"],
+      "bad": ["light"]
+    },
+    {
+      "id": "gordo",
+      "text": "gordo",
+      "sentence": "Me cae gordo ese tipo.",
+      "good": ["annoy", "dislike", "can't stand", "can’t stand", "rub", "irritat", "nerves"],
+      "bad": ["\\bfat\\b"]
+    }
+  ]
+}
