@@ -1,0 +1,26 @@
+{
+  "name": "@glossa/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Platform-independent building blocks for Glossa: subtitle parsing, word segmentation, translation/dictionary/explanation providers, vocabulary export.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "eval": "jiti eval/translate.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3"
+  }
+}

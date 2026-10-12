@@ -1,0 +1,19 @@
+{
+  "name": "glossa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source interactive subtitles for language learners: click any word for a translation and explanation.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @glossa/extension dev",
+    "dev:firefox": "pnpm --filter @glossa/extension dev:firefox",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  }
+}

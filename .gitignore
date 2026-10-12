@@ -1,0 +1,18 @@
+node_modules/
+.output/
+.wxt/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+web-ext.config.ts
+
+# Downloaded at build time by apps/extension/scripts/fetch-model-libs.mjs
+apps/extension/public/webllm/
+
+# Translation check results (packages/core/eval)
+eval-results-*.json

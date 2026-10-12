@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Source for public/icon/*.png. A subtitle line with one highlighted word and its card above it. -->
+  <rect width="128" height="128" rx="28" fill="#1a5ce6"/>
+  <path d="M28 18h72a10 10 0 0 1 10 10v22a10 10 0 0 1-10 10H78l-8 10-8-10H28a10 10 0 0 1-10-10V28a10 10 0 0 1 10-10z" fill="#fff"/>
+  <rect x="30" y="31" width="44" height="8" rx="4" fill="#1a5ce6" opacity=".85"/>
+  <rect x="30" y="43" width="28" height="6" rx="3" fill="#1a5ce6" opacity=".45"/>
+  <rect x="14" y="80" width="30" height="18" rx="6" fill="#fff" opacity=".9"/>
+  <rect x="50" y="78" width="40" height="22" rx="7" fill="#ffd54a"/>
+  <rect x="96" y="80" width="18" height="18" rx="6" fill="#fff" opacity=".9"/>
+  <rect x="34" y="106" width="60" height="10" rx="5" fill="#fff" opacity=".55"/>
+</svg>

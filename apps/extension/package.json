@@ -1,0 +1,29 @@
+{
+  "name": "@glossa/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Glossa browser extension: interactive dual-language subtitles on streaming sites.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm model-libs && wxt",
+    "dev:firefox": "pnpm model-libs && wxt -b firefox",
+    "build": "pnpm model-libs && wxt build",
+    "build:firefox": "pnpm model-libs && wxt build -b firefox",
+    "zip": "pnpm model-libs && wxt zip",
+    "zip:firefox": "pnpm model-libs && wxt zip -b firefox",
+    "typecheck": "wxt prepare && tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "model-libs": "node scripts/fetch-model-libs.mjs"
+  },
+  "dependencies": {
+    "@glossa/core": "workspace:*",
+    "@mlc-ai/web-llm": "0.2.85",
+    "preact": "10.29.8"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "wxt": "0.21.4"
+  }
+}

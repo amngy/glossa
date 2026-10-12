@@ -1,0 +1,11 @@
+/*
+ * The shadow host covers the player: above the video (YouTube's video container has z-index 10),
+ * below the player controls (59). These need !important to beat WXT's `:host { all: initial !important }`
+ * reset, which also overrides inline styles on the host.
+ */
+:host {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 45 !important;
+  pointer-events: none !important;
+}
