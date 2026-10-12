@@ -3,6 +3,8 @@ import {
   buildExplainPrompt,
   cleanTranslation,
   deeplTargetLanguage,
+  parseDictionaryReply,
+  pickVoice,
   LruCache,
   normalizeOpenAIBaseUrl,
   OpenAICompatibleChatModel,
@@ -33,17 +35,21 @@ describe('parseWiktionaryResponse', () => {
     ],
   };
 
+  const source = { name: 'Wiktionary · CC BY-SA', url: 'https://en.wiktionary.org/wiki/casa' };
+
   it('returns plain-text entries for the requested language only', () => {
-    expect(parseWiktionaryResponse(response, 'es-MX')).toEqual([
+    expect(parseWiktionaryResponse(response, 'es-MX', 'casa')).toEqual([
       {
         language: 'Spanish',
         partOfSpeech: 'Noun',
         senses: [{ definition: 'house, home', examples: ['Mi casa es tu casa.'] }],
+        source,
       },
       {
         language: 'Spanish',
         partOfSpeech: 'Verb',
         senses: [{ definition: 'inflection of casar', examples: [] }],
+        source,
       },
     ]);
   });
@@ -58,8 +64,19 @@ describe('parseWiktionaryResponse', () => {
       ],
     };
     expect(parseWiktionaryResponse(data, 'ja')).toEqual([
-      { language: 'Japanese', partOfSpeech: 'Noun', senses: [{ definition: 'spirit', examples: [] }] },
+      {
+        language: 'Japanese',
+        partOfSpeech: 'Noun',
+        senses: [{ definition: 'spirit', examples: [] }],
+        source: { name: 'Wiktionary · CC BY-SA' },
+      },
     ]);
+  });
+
+  it('finds Croatian and Serbian under Wiktionary’s Serbo-Croatian code', () => {
+    const sh = { sh: [{ partOfSpeech: 'Noun', language: 'Serbo-Croatian', definitions: [{ definition: 'house' }] }] };
+    expect(parseWiktionaryResponse(sh, 'hr', 'kuća')[0]?.senses[0]?.definition).toBe('house');
+    expect(parseWiktionaryResponse(sh, 'sr-Latn')).toHaveLength(1);
   });
 
   it('returns nothing for a language without entries', () => {
@@ -81,6 +98,60 @@ describe('WiktionaryDictionary', () => {
     const entries = await new WiktionaryDictionary().lookup('映画を', 'ja');
     expect(entries[0]?.senses[0]?.definition).toBe('movie');
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('parseDictionaryReply', () => {
+  it('groups lines by part of speech and ignores lines without a definition', () => {
+    const reply = '<think>hm</think>Sure!\n1. **noun** | form of kutya: dog\n- noun | pet\nverb | to walk a dog';
+    const entries = parseDictionaryReply(reply, 'hu', 'AI · test');
+    expect(entries.map((e) => [e.partOfSpeech, e.senses.map((s) => s.definition)])).toEqual([
+      ['noun', ['form of kutya: dog', 'pet']],
+      ['verb', ['to walk a dog']],
+    ]);
+    expect(entries[0]?.language).toBe('Hungarian');
+    expect(entries[0]?.source.name).toBe('AI · test');
+  });
+
+  it('keeps an inflected form that has no part of speech', () => {
+    const entries = parseDictionaryReply('Form of szeretni: to love', 'hu', 'AI');
+    expect(entries).toMatchObject([{ partOfSpeech: '', senses: [{ definition: 'Form of szeretni: to love' }] }]);
+  });
+
+  it('returns nothing for "unknown"', () => {
+    expect(parseDictionaryReply('unknown', 'hu', 'AI')).toEqual([]);
+  });
+});
+
+describe('pickVoice', () => {
+  const voice = (name: string, lang: string, localService = true, isDefault = false) => ({
+    name,
+    lang,
+    localService,
+    default: isDefault,
+  });
+  const voices = [
+    voice('Microsoft David', 'en-US', true, true),
+    voice('Microsoft Maria', 'pt-PT'),
+    voice('Google português do Brasil', 'pt-BR', false),
+    voice('Microsoft Tamas Online (Natural)', 'hu-HU', false),
+  ];
+
+  it('never falls back to an unrelated voice', () => {
+    expect(pickVoice(voices, 'ja')).toBeUndefined();
+    expect(pickVoice([voice('Microsoft David', 'en-US', true, true)], 'hu')).toBeUndefined();
+  });
+
+  it('never picks a voice that sends the text to a remote service', () => {
+    expect(pickVoice(voices, 'hu')).toBeUndefined();
+    expect(pickVoice(voices, 'pt-BR')?.name).toBe('Microsoft Maria');
+  });
+
+  it('matches the base language and prefers the exact region', () => {
+    const local = [voice('Microsoft Maria', 'pt-PT'), voice('Microsoft Francisca', 'pt-BR')];
+    expect(pickVoice(local, 'pt-BR')?.name).toBe('Microsoft Francisca');
+    expect(pickVoice(local, 'pt')).toBeDefined();
+    expect(pickVoice([voice('Android hu', 'hu_HU')], 'hu-HU')).toBeDefined();
   });
 });
 

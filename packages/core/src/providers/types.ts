@@ -36,6 +36,8 @@ export interface DictionaryEntry {
   language: string;
   partOfSpeech: string;
   senses: DictionarySense[];
+  /** Where the entry came from, for credit and a link to read more. */
+  source: { name: string; url?: string };
 }
 
 export interface Dictionary {

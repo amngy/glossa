@@ -1,6 +1,6 @@
 import { baseLanguage, tokenize, type Cue } from '@glossa/core';
 import type { RefObject } from 'preact';
-import { useMemo, useRef } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { languageOptions } from '@/lib/languages';
 import { MAX_SUBTITLE_POSITION } from '@/lib/settings';
 import { useStore, type Store } from '@/lib/store';
@@ -16,14 +16,14 @@ const keepFocus = (event: MouseEvent) => event.preventDefault();
 const TRANSLATION_LABELS = { show: 'Translation: shown', blur: 'Translation: blurred until hover', hide: 'Translation: hidden' };
 
 /** Lets the viewer drag the subtitles up or down, for example off subtitles burned into the video. */
-function startMove(event: PointerEvent, controller: SubtitleController, rootRef: RefObject<HTMLDivElement>) {
+function startMove(event: PointerEvent, controller: SubtitleController, rootRef: RefObject<HTMLDivElement>, maxRaise: number) {
   if (event.button !== 0 || !rootRef.current) return;
   event.preventDefault();
   const handle = event.currentTarget as HTMLElement;
   const height = rootRef.current.getBoundingClientRect().height || 1;
   const startY = event.clientY;
-  const startPosition = controller.store.get().settings.subtitlePosition;
-  const positionAt = (y: number) => startPosition + ((startY - y) / height) * 100;
+  const startPosition = Math.min(maxRaise, controller.store.get().settings.subtitlePosition);
+  const positionAt = (y: number) => Math.min(maxRaise, startPosition + ((startY - y) / height) * 100);
   handle.setPointerCapture(event.pointerId);
   const move = (e: PointerEvent) => controller.moveSubtitles(positionAt(e.clientY), false);
   const end = (e: PointerEvent) => {
@@ -144,11 +144,13 @@ function Toolbar({
   controller,
   onExplainLine,
   rootRef,
+  maxRaise,
 }: {
   state: OverlayState;
   controller: SubtitleController;
   onExplainLine: ((element: Element) => void) | null;
   rootRef: RefObject<HTMLDivElement>;
+  maxRaise: number;
 }) {
   const { settings, tracks, status, track } = state;
   const fileInput = useRef<HTMLInputElement>(null);
@@ -168,7 +170,7 @@ function Toolbar({
       <span
         class="glossa-brand glossa-handle"
         title="Drag to move the subtitles up or down. Double-click to put them back."
-        onPointerDown={(event) => startMove(event, controller, rootRef)}
+        onPointerDown={(event) => startMove(event, controller, rootRef, maxRaise)}
         onDblClick={() => controller.moveSubtitles(0, true)}
       >
         <MoveIcon />
@@ -289,12 +291,27 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
   const anchorFor = useAnchor(subsRef, rootRef);
 
   const { settings, track, displayIndex } = state;
-  if (!settings.enabled || !state.active || state.adShowing) return null;
+  const visible = settings.enabled && state.active && !state.adShowing;
+
+  // The subtitles' own height, so they can't be raised past the top of the player.
+  const [subsHeight, setSubsHeight] = useState(0);
+  useEffect(() => {
+    const subs = subsRef.current;
+    if (!subs) return;
+    const observer = new ResizeObserver(() => setSubsHeight(subs.offsetHeight));
+    observer.observe(subs);
+    return () => observer.disconnect();
+  }, [visible]);
+
+  if (!visible) return null;
 
   const cue = track && displayIndex >= 0 ? track.cues[displayIndex] : undefined;
   const fontSize = Math.round(Math.min(44, Math.max(15, state.playerHeight * 0.042 * settings.fontScale)));
   const canExplain = settings.ai.provider !== 'none' && cue !== undefined;
-  const raise = Math.min(MAX_SUBTITLE_POSITION, Math.max(0, settings.subtitlePosition));
+  const baseline = state.controlsHeight > 0 ? state.controlsHeight : state.playerHeight * 0.035;
+  const roomAbove = ((state.playerHeight - subsHeight - baseline) / state.playerHeight) * 100;
+  const maxRaise = Math.max(0, Math.min(MAX_SUBTITLE_POSITION, roomAbove));
+  const raise = Math.min(maxRaise, Math.max(0, settings.subtitlePosition));
   const box = state.box;
   const placement = box
     ? { inset: 'auto', left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px` }
@@ -314,6 +331,7 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
           controller={controller}
           onExplainLine={canExplain ? (element) => controller.openLineCard(displayIndex, anchorFor(element)) : null}
           rootRef={rootRef}
+          maxRaise={maxRaise}
         />
         {cue && <Line cue={cue} index={displayIndex} state={state} controller={controller} anchorFor={anchorFor} />}
         {cue && <Translation index={displayIndex} state={state} controller={controller} />}

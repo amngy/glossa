@@ -1,13 +1,11 @@
 import {
   baseLanguage,
   cleanCueText,
-  languageFromFileName,
   languageName,
-  parseTextSubtitles,
   type Cue,
   type SubtitleTrack,
 } from '@glossa/core';
-import { errorMessage, SubtitleController } from '@/components/overlay/controller';
+import { fallbackLanguage, sampleText, SubtitleController } from '@/components/overlay/controller';
 import type { TrackOption, VideoBox } from '@/components/overlay/state';
 import { detectLanguage } from '@/lib/detect-language';
 
@@ -47,19 +45,6 @@ function readCues(track: TextTrack): Cue[] {
     if (text) cues.push({ start: cue.startTime, end: cue.endTime, text });
   }
   return cues.sort((a, b) => a.start - b.start);
-}
-
-/** A sample of a track's text for language detection. */
-function sampleText(cues: Cue[]): string {
-  return cues
-    .slice(0, 40)
-    .map((cue) => cue.text)
-    .join('\n');
-}
-
-/** Last resort when nothing says which language a track is in; the viewer can correct it. */
-function fallbackLanguage(): string {
-  return baseLanguage(document.documentElement.lang || navigator.language || 'en');
 }
 
 function isLargeEnough(video: HTMLVideoElement): boolean {
@@ -383,23 +368,9 @@ export class VideoController extends SubtitleController {
   }
 
   private async readFile(file: File): Promise<void> {
-    let cues: Cue[];
-    try {
-      cues = parseTextSubtitles(await file.text());
-    } catch (error) {
-      this.store.set({ status: 'error', error: `Couldn’t read ${file.name}: ${errorMessage(error)}` });
-      return;
-    }
-    if (cues.length === 0) {
-      this.store.set({ status: 'error', error: `No subtitles found in ${file.name}. Glossa reads .srt and .vtt files.` });
-      return;
-    }
-    const lang =
-      languageFromFileName(file.name) ??
-      (await detectLanguage(sampleText(cues))) ??
-      this.store.get().track?.lang ??
-      fallbackLanguage();
-    this.fileTrack = { lang, label: file.name, cues };
+    const track = await this.readSubtitleFile(file);
+    if (!track) return;
+    this.fileTrack = track;
     this.useFile();
     this.refreshTracks();
   }
