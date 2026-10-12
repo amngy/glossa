@@ -58,6 +58,12 @@
   text-underline-offset: 0.2em;
 }
 
+rt {
+  font-size: 0.5em;
+  line-height: 1;
+  user-select: none;
+}
+
 .glossa-word-new {
   text-decoration: underline dotted 1px rgba(255, 255, 255, 0.5);
   text-underline-offset: 0.2em;
