@@ -106,6 +106,23 @@ word fits. AI translation uses them the same way, and DeepL gets them as context
 | Claude (Anthropic) | Pay per use | Paste an API key from [console.anthropic.com](https://console.anthropic.com). Defaults to Claude Opus 5.5. The best explanations. |
 | Ollama, LM Studio or another server | Free if you run it | Any OpenAI-compatible server: [Ollama](https://ollama.com) (`http://localhost:11434`), [LM Studio](https://lmstudio.ai) (`http://localhost:1234/v1`), OpenRouter, a vLLM server, and so on. Good models: `gemma4:e4b` (best in our Japanese test), `qwen3.5:9b` or `qwen3.5:4b`. |
 
+How local models compare on Japanese → English (40 lines and words from
+`packages/core/eval/ja-en.json`, through Ollama on an RTX 3070 with 8 GB, October 2026):
+
+| Model | Passed | Median per call |
+| --- | --- | --- |
+| `gemma4:e4b` | 36 / 40 | 0.2 s |
+| `qwen3.5:9b` | 34 / 40 | 0.3 s |
+| `qwen2.5:7b` | 29 / 40 | 0.1 s |
+| `qwen3.5:4b` | 28 / 40 | 0.2 s |
+| `aya-expanse:8b` | 27 / 40 | 0.2 s |
+| `deepseek-r1:8b` | 26 / 40 | 5.6 s (it thinks first, and sometimes returns nothing) |
+
+The pass check is rough (it looks for phrases a good translation contains), and some misses are fair
+translations, so read the outputs too: `pnpm --filter @glossa/core eval <model>` runs it on your machine.
+Only Japanese → English has been measured, and only models served by Ollama; Glossa's packaged on-device
+models are not in this table yet.
+
 Both sections have a **Test** button. Ollama normally refuses requests from browser extensions; Glossa
 handles that for you in Chrome and Edge. If you still get a 403 (for example in Firefox), set the environment
 variable `OLLAMA_ORIGINS=chrome-extension://*,moz-extension://*` and restart Ollama.
