@@ -101,5 +101,7 @@ export default defineBackground(() => {
     onDeviceStatus: ({ model }) => askOffscreen({ type: 'status', model }),
     onDeviceDownload: ({ model }) => askOffscreen({ type: 'download', model }),
     onDeviceDelete: ({ model }) => askOffscreen({ type: 'delete', model }),
+
+    readings: ({ text }) => cached(`r|${text}`, () => askOffscreen({ type: 'readings', text })),
   });
 });

@@ -1,6 +1,6 @@
 import { browser, type Browser } from '#imports';
 import type { ChatModel } from '@glossa/core';
-import type { OffscreenEnvelope, OffscreenReply, OffscreenRequest } from './on-device';
+import type { OffscreenEnvelope, OffscreenReply, OffscreenRequest, ReadingsRequest } from './on-device';
 import { findOnDeviceModel } from './on-device-models';
 
 /** Background side of the on-device model, which runs in an offscreen document (see entrypoints/offscreen). */
@@ -27,7 +27,7 @@ async function ensureOffscreen(): Promise<void> {
   await creating;
 }
 
-async function send(request: OffscreenRequest): Promise<OffscreenReply | undefined> {
+async function send(request: OffscreenRequest | ReadingsRequest): Promise<OffscreenReply | undefined> {
   // Right after it's created, the document may still be loading its script and not listening yet.
   for (let attempt = 0; ; attempt++) {
     try {
@@ -41,7 +41,7 @@ async function send(request: OffscreenRequest): Promise<OffscreenReply | undefin
   }
 }
 
-export async function askOffscreen<T>(request: OffscreenRequest): Promise<T> {
+export async function askOffscreen<T>(request: OffscreenRequest | ReadingsRequest): Promise<T> {
   await ensureOffscreen();
   const reply = await send(request);
   if (!reply) throw new Error('Glossa’s on-device model didn’t respond. Try again.');

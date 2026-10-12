@@ -42,6 +42,9 @@ talks to. You can also run every one of those services yourself.
   as an Anki deck, along with the sentence they appeared in. Mark words you already know with the check on
   the word card: they're never highlighted. In Settings you can also underline every word you haven't
   saved or marked, so the new ones stand out.
+- **Furigana (optional).** Japanese lines can show the reading over each kanji. It needs the "Japanese
+  readings" pack, which you install from Settings; see [Optional packs](#optional-packs). Chrome and Edge only
+  for now.
 - **Zero setup by default.** It works out of the box with YouTube's own translations, Chrome's on-device
   translator and Wiktionary. Add DeepL, LibreTranslate or an AI model only if you want them.
 - **Private.** No Glossa account, server, analytics or tracking. See [Privacy](#privacy).
@@ -176,6 +179,8 @@ browser:
 - **The AI model you chose**, if any: the word or line you ask about, with the lines around it, or the
   word when you press "Look up with AI". The two on-device options send nothing.
 - **Hugging Face**, once, if you download Glossa's on-device model.
+- **jsDelivr** (`cdn.jsdelivr.net`), once per pack, when you press Install on an [optional pack](#optional-packs).
+  Nothing is requested from it otherwise.
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads.
 
 On other sites Glossa only reads the subtitle tracks the page already loaded, or the file you pick. It
@@ -184,6 +189,17 @@ sends nothing to those sites.
 API keys stay in your browser's extension storage on this device. They aren't synced, and only Glossa's
 background script reads them. Glossa asks for permission to reach a server only when you save a setting
 that uses it.
+
+## Optional packs
+
+Some features need data Glossa doesn't ship. Settings → **Optional packs** lists them with their size and
+where they come from. Nothing is downloaded until you press Install. Each file is checked against a
+checksum pinned in Glossa, stored in the extension's own storage, and used offline from then on. Remove a
+pack in the same place to free the space. Packs are data only; the extension never runs downloaded code.
+
+| Pack | Size | From | Used for |
+| --- | --- | --- | --- |
+| Japanese readings | 17 MB | jsDelivr (npm `@sglkc/kuromoji`, IPAdic) | Furigana over kanji |
 
 ## Saved words and Anki
 
