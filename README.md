@@ -22,7 +22,8 @@ talks to. You can also run every one of those services yourself.
 ## Features
 
 - **Interactive subtitles.** Glossa replaces YouTube's captions with its own, made of words you can click.
-  It uses the video's own subtitles, including auto-generated ones.
+  It uses the video's own subtitles, including auto-generated ones. If a video has none, load a `.srt` or
+  `.vtt` file with the file button in Glossa's toolbar.
 - **Any video on the web.** On other sites, click Glossa's toolbar button and choose **Subtitles for the
   video on this page**. Glossa uses the video's own subtitle tracks, or a `.srt` or `.vtt` file you load.
   If the page also has subtitles in your language, they become the line translation.

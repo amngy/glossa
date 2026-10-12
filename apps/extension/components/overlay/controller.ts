@@ -6,12 +6,15 @@ import {
   findBestOverlap,
   findCueIndexAtOrBefore,
   isBrowserTranslatorSupported,
+  languageFromFileName,
+  parseTextSubtitles,
   subtitleContext,
   type Cue,
   type ExplainRequest,
   type SubtitleTrack,
   type TranslationRequest,
 } from '@glossa/core';
+import { detectLanguage } from '@/lib/detect-language';
 import { sendMessage } from '@/lib/messages';
 import { MAX_SUBTITLE_POSITION, updateSettings, watchSettings, type Settings, type TranslationDisplay } from '@/lib/settings';
 import type { Store } from '@/lib/store';
@@ -28,6 +31,19 @@ const HOVER_GRACE_MS = 300;
 
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** A sample of a track's text for language detection. */
+export function sampleText(cues: Cue[]): string {
+  return cues
+    .slice(0, 40)
+    .map((cue) => cue.text)
+    .join('\n');
+}
+
+/** Last resort when nothing says which language a track is in; the viewer can correct it. */
+export function fallbackLanguage(): string {
+  return baseLanguage(document.documentElement.lang || navigator.language || 'en');
 }
 
 /**
@@ -87,6 +103,27 @@ export abstract class SubtitleController {
 
   /** Loads a subtitle file the viewer picked. Only offered where `canLoadFile` is set. */
   loadFile(_file: File): void {}
+
+  /** Reads a subtitle file the viewer picked. Shows an error and returns null if it has no lines. */
+  protected async readSubtitleFile(file: File): Promise<SubtitleTrack | null> {
+    let cues: Cue[];
+    try {
+      cues = parseTextSubtitles(await file.text());
+    } catch (error) {
+      this.store.set({ status: 'error', error: `Couldn’t read ${file.name}: ${errorMessage(error)}` });
+      return null;
+    }
+    if (cues.length === 0) {
+      this.store.set({ status: 'error', error: `No subtitles found in ${file.name}. Glossa reads .srt and .vtt files.` });
+      return null;
+    }
+    const lang =
+      languageFromFileName(file.name) ??
+      (await detectLanguage(sampleText(cues))) ??
+      this.store.get().track?.lang ??
+      fallbackLanguage();
+    return { lang, label: file.name, cues };
+  }
 
   /** Corrects the current track's language. Only offered where `languageGuessed` is set. */
   setTrackLanguage(_lang: string): void {}
