@@ -3,7 +3,10 @@ import './style.css';
 import { browser, type Browser } from '#imports';
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
+import { baseLanguage } from '@glossa/core';
 import { languageOptions } from '@/lib/languages';
+import { sendMessage } from '@/lib/messages';
+import { installedSpeechPack, type Pack } from '@/lib/packs';
 import { getSettings, updateSettings, watchSettings, type Settings } from '@/lib/settings';
 import {
   addVideoSite,
@@ -94,6 +97,87 @@ function PageVideo({ tab }: { tab: Browser.tabs.Tab }) {
   );
 }
 
+/**
+ * Recognises the speech in this tab's audio on this device, for videos without subtitles. It needs a
+ * speech pack from Settings, and the tab's audio permission, which the browser asks for on first use.
+ */
+function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settings }) {
+  const [pack, setPack] = useState<Pack | null | undefined>(undefined);
+  const [active, setActive] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const tabId = tab.id;
+  const language = settings.spokenLanguage || (baseLanguage(settings.nativeLanguage) === 'ja' ? 'en' : 'ja');
+
+  useEffect(() => {
+    void installedSpeechPack().then((installed) => setPack(installed ?? null));
+    void sendMessage('asrStatus', null).then(({ tabId: current }) => setActive(current === tabId), () => {});
+  }, [tabId]);
+
+  if (tabId === undefined || pack === undefined) return null;
+
+  if (pack === null) {
+    return (
+      <section class="popup-page">
+        <p class="popup-hint muted">No subtitles? Glossa can write them from the video’s sound, on this device.</p>
+        <button class="button popup-wide" onClick={() => void browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#packs` })}>
+          Add speech recognition in Settings
+        </button>
+      </section>
+    );
+  }
+
+  const start = async () => {
+    setMessage('Starting…');
+    try {
+      const permission = { permissions: ['tabCapture'] as Browser.runtime.ManifestPermission[] };
+      if (!(await browser.permissions.contains(permission)) && !(await browser.permissions.request(permission))) {
+        setMessage('Glossa needs permission to listen to this tab’s audio.');
+        return;
+      }
+      const streamId = await browser.tabCapture.getMediaStreamId({ targetTabId: tabId });
+      // Other sites need Glossa's overlay started first; YouTube's is always there.
+      if (!isYouTube(tab.url)) await startOnTab(tabId);
+      if (language !== settings.spokenLanguage) void updateSettings({ spokenLanguage: language });
+      await sendMessage('asrStart', { tabId, streamId, language, pack: pack.id });
+      window.close();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const stop = () => {
+    void sendMessage('asrStop', null).then(() => window.close());
+  };
+
+  return (
+    <section class="popup-page">
+      {active ? (
+        <button class="button popup-wide" onClick={stop}>
+          Stop transcribing
+        </button>
+      ) : (
+        <>
+          <label class="popup-field">
+            <span>Spoken language</span>
+            <select value={language} onChange={(event) => void updateSettings({ spokenLanguage: event.currentTarget.value })}>
+              {languageOptions(language).map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button class="button primary popup-wide" onClick={() => void start()}>
+            Transcribe this video’s audio
+          </button>
+          <p class="popup-hint muted">On this device. Lines appear a few seconds after they’re spoken.</p>
+        </>
+      )}
+      {message && <p class="popup-hint muted">{message}</p>}
+    </section>
+  );
+}
+
 function Popup() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [savedCount, setSavedCount] = useState(0);
@@ -159,6 +243,7 @@ function Popup() {
       </dl>
 
       {settings.enabled && tab && !isYouTube(tab.url) && <PageVideo tab={tab} />}
+      {settings.enabled && tab && browser.offscreen && <Transcribe tab={tab} settings={settings} />}
 
       <p class="popup-hint muted">
         Open a YouTube video, or any video with subtitles, and click any word in the subtitles. <kbd>A</kbd>{' '}

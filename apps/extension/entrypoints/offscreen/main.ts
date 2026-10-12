@@ -1,6 +1,8 @@
 import { browser } from '#imports';
 import { japaneseReadings } from '@/lib/japanese-readings';
 import { isOffscreenEnvelope, type OffscreenReply, type WorkerReply, type WorkerRequest } from '@/lib/on-device';
+import type { AsrEnvelope, AsrEvent } from '@/lib/asr';
+import { AsrSession } from '@/lib/asr-capture';
 
 /**
  * Hosts the worker that runs Glossa's on-device model (entrypoints/llm-worker.ts) and relays the
@@ -22,6 +24,28 @@ worker.onerror = (event) => {
   pending.clear();
 };
 
+let asr: AsrSession | null = null;
+
+function tellTab(tabId: number, event: AsrEvent): void {
+  void browser.runtime.sendMessage({ glossaAsr: true, tabId, event } satisfies AsrEnvelope).catch(() => {});
+}
+
+function startAsr(tabId: number, streamId: string, language: string, pack: string): Promise<void> {
+  asr?.stop();
+  const session = new AsrSession(
+    tabId,
+    (event) => tellTab(tabId, event),
+    () => {
+      if (asr === session) asr = null;
+    },
+  );
+  asr = session;
+  return session.start(streamId, language, pack).catch((error: unknown) => {
+    tellTab(tabId, { kind: 'error', message: error instanceof Error ? error.message : String(error) });
+    session.stop();
+  });
+}
+
 browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
   if (sender.id !== browser.runtime.id || !isOffscreenEnvelope(message)) return;
   const { request } = message;
@@ -31,6 +55,16 @@ browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =
       (error: unknown) => sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) } satisfies OffscreenReply),
     );
     return true;
+  }
+  if (request.type === 'asr-start') {
+    void startAsr(request.tabId, request.streamId, request.language, request.pack);
+    sendResponse({ ok: true, data: null } satisfies OffscreenReply);
+    return;
+  }
+  if (request.type === 'asr-stop') {
+    asr?.stop();
+    sendResponse({ ok: true, data: null } satisfies OffscreenReply);
+    return;
   }
   const id = nextId++;
   pending.set(id, sendResponse);

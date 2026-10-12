@@ -19,6 +19,8 @@ export interface Settings {
   enabled: boolean;
   /** Language that translations and explanations are written in. */
   nativeLanguage: string;
+  /** The language spoken in videos Glossa transcribes; empty until the viewer picks one. */
+  spokenLanguage: string;
   translator: TranslatorChoice;
   libreTranslateUrl: string;
   ai: {
@@ -61,6 +63,7 @@ function defaultNativeLanguage(): string {
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
   nativeLanguage: defaultNativeLanguage(),
+  spokenLanguage: '',
   translator: 'browser',
   libreTranslateUrl: 'http://localhost:5000',
   ai: { provider: 'none', model: '', baseUrl: 'http://localhost:11434/v1', onDeviceModel: DEFAULT_ON_DEVICE_MODEL },

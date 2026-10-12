@@ -26,6 +26,8 @@ function PackRow({ pack }: { pack: Pack }) {
   const install = () => {
     setError(null);
     setProgress(0);
+    // Asked alongside the download; if declined, the popup asks again when it's needed.
+    if (pack.permission) void browser.permissions.request({ permissions: [pack.permission] }).catch(() => {});
     installPack(pack, setProgress)
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : String(reason)))
       .finally(() => {

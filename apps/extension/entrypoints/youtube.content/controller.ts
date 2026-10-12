@@ -1,5 +1,5 @@
 import { baseLanguage, parseTextSubtitles, parseYouTubeJson3, type Cue, type SubtitleTrack } from '@glossa/core';
-import { errorMessage, SubtitleController } from '@/components/overlay/controller';
+import { errorMessage, SubtitleController, TRANSCRIPT_KEY } from '@/components/overlay/controller';
 import type { TrackOption } from '@/components/overlay/state';
 import {
   FROM_PAGE,
@@ -89,6 +89,7 @@ export class YouTubeController extends SubtitleController {
     this.loadedTrackKey = null;
     this.captionTracks = [];
     this.fileTrack = null;
+    this.clearTranscript();
     this.sawCaptionsForVideo = false;
     this.trackRequestAttempts = 0;
     this.setTrack(undefined, {
@@ -127,7 +128,7 @@ export class YouTubeController extends SubtitleController {
     this.captionTracks = tracks;
     this.store.set({ tracks: this.trackOptions() });
     if (tracks.length === 0) {
-      if (!this.fileTrack) this.store.set({ status: 'no-subtitles' });
+      if (!this.fileTrack && !this.transcript) this.store.set({ status: 'no-subtitles' });
       return;
     }
     if (!this.fileTrack && !this.sawCaptionsForVideo && this.store.get().settings.enabled) {
@@ -139,6 +140,8 @@ export class YouTubeController extends SubtitleController {
   private trackOptions(): TrackOption[] {
     const options = this.captionTracks.map((t) => ({ key: trackKey(t), name: t.name }));
     if (this.fileTrack) options.push({ key: FILE_KEY, name: this.fileTrack.label ?? 'Subtitle file' });
+    const transcript = this.transcriptOption();
+    if (transcript) options.push(transcript);
     return options;
   }
 
@@ -166,7 +169,15 @@ export class YouTubeController extends SubtitleController {
     this.useFile();
   }
 
+  protected override onTranscriptionStart(): void {
+    this.store.set({ tracks: this.trackOptions() });
+  }
+
   selectTrack(key: string): void {
+    if (key === TRANSCRIPT_KEY) {
+      this.showTranscript();
+      return;
+    }
     if (key === FILE_KEY) {
       this.useFile();
       return;

@@ -11,6 +11,16 @@ export { baseLanguage, languageName, languageFromFileName, COMMON_LANGUAGES } fr
 export { pickVoice, type VoiceLike } from './text/voice';
 export { rubyIn, rubyParts, rubySpans, type ReadingToken, type RubyPart, type RubySpan } from './text/ruby';
 
+export {
+  addTranscribedCues,
+  Endpointer,
+  MediaClock,
+  placeSpokenLines,
+  type EndpointOptions,
+  type SpokenLine,
+  type Utterance,
+} from './asr/transcribe';
+
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';
 export { LlmDictionary, parseDictionaryReply } from './providers/llm-dictionary';

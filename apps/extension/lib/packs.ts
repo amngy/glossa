@@ -21,6 +21,8 @@ export interface Pack {
   host: string;
   baseUrl: string;
   files: readonly PackFile[];
+  /** An optional permission the pack's feature needs; Settings asks for it when the pack is installed. */
+  permission?: 'tabCapture';
 }
 
 export const JAPANESE_READINGS: Pack = {
@@ -47,7 +49,46 @@ export const JAPANESE_READINGS: Pack = {
   ],
 };
 
-export const PACKS: readonly Pack[] = [JAPANESE_READINGS];
+/** The same files for every Whisper size; only the sizes and checksums of the model files differ. */
+function whisperPack(size: 'tiny' | 'base', revision: string, sizeMB: number, description: string, files: [string, number, string][]): Pack {
+  return {
+    id: `whisper-${size}`,
+    name: `Speech recognition (${size})`,
+    description,
+    sizeMB,
+    host: 'huggingface.co',
+    // onnx-community's ONNX export of OpenAI Whisper (MIT), pinned to a commit, 8-bit quantized.
+    baseUrl: `https://huggingface.co/onnx-community/whisper-${size}/resolve/${revision}/`,
+    files: files.map(([name, bytes, sha256]) => ({ name, bytes, sha256 })),
+    // Listening to a tab's audio. Asked here, from the click, because the toolbar popup closes when the browser's prompt opens.
+    permission: 'tabCapture',
+  };
+}
+
+export const WHISPER_TINY = whisperPack('tiny', 'ff4177021cc41f7db950912b73ea4fdf7d01d8e7', 43.6, 'Turns a video’s sound into subtitles on your device. Fastest, least accurate.', [
+  ['config.json', 2243, '46aeea0a406afbeb563fc8e59ca10609203df4299af6a83f73752fef369efd2d'],
+  ['generation_config.json', 3772, 'f5c67e5a4f7102f8cb4d058bc95da276bbc19eeec997267c3bb0f25ef68facd1'],
+  ['preprocessor_config.json', 339, 'a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d'],
+  ['tokenizer.json', 2480466, '27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566'],
+  ['tokenizer_config.json', 282683, '2a4c4281cf9f51ac6ccc406fdc711a087afe6530f671fa7b80953edc498275ce'],
+  ['onnx/encoder_model_quantized.onnx', 10124990, '2af4a414ca47aa30f61246017e5fe82b0a8d229281d1255ba666a2a7f6b84d19'],
+  ['onnx/decoder_model_merged_quantized.onnx', 30719241, '25e807a962b6349356d0ea5d0dfe530b7e5bf0e2a484aeca0359d03143faddd3'],
+]);
+
+export const WHISPER_BASE = whisperPack('base', '1846881b6b3a3024392c1eea3ad983695bc23925', 79.7, 'Turns a video’s sound into subtitles on your device. More accurate, about half as fast.', [
+  ['config.json', 2243, 'f4d0608f7d918166da7edb3e188de5ef1bfe70d9802e785d271fd88111e9cf4b'],
+  ['generation_config.json', 3832, '61070cf8de25b1e9256e8e102ded49d8d24a8369ed36ef84fdf21549e68125a0'],
+  ['preprocessor_config.json', 339, 'a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d'],
+  ['tokenizer.json', 2480466, '27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566'],
+  ['tokenizer_config.json', 282682, '2e036e4dbacfdeb7242c7d4ec4149f4a16e86026048f94d1637e3a8ee9c6a573'],
+  ['onnx/encoder_model_quantized.onnx', 23201314, '5862993336bf33acd23736071aae2b32261d3b1b2f37780194460d4ef974dd46'],
+  ['onnx/decoder_model_merged_quantized.onnx', 53693315, 'fa3ef9902734ce5ae6f9ef2bdb2ba9a6c4b5785b09f4f420ce036573dc9d090b'],
+]);
+
+/** Best first: the first installed one is used for speech recognition. */
+export const SPEECH_PACKS: readonly Pack[] = [WHISPER_BASE, WHISPER_TINY];
+
+export const PACKS: readonly Pack[] = [JAPANESE_READINGS, ...SPEECH_PACKS];
 
 const DB_NAME = 'glossa-packs';
 const STORE = 'files';
@@ -116,6 +157,12 @@ export async function removePack(pack: Pack): Promise<void> {
   await withStore('readwrite', (store) => {
     for (const file of pack.files) store.delete(keyOf(pack, file.name));
   });
+}
+
+/** The best installed speech pack, if any. */
+export async function installedSpeechPack(): Promise<Pack | undefined> {
+  for (const pack of SPEECH_PACKS) if (await isPackInstalled(pack)) return pack;
+  return undefined;
 }
 
 /** The bytes of one installed file, or undefined if it isn't installed. */
