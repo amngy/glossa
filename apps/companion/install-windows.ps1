@@ -7,8 +7,10 @@ $here = $PSScriptRoot
 # Must match the `key` in apps/extension/wxt.config.ts.
 $extensionId = 'ifjnjihdpegigjmpamidpemajjhabbme'
 
+# Browsers start the host with their own PATH, which may predate the uv install: write uv's full path.
+$uv = (Get-Command uv -ErrorAction Stop).Source
 # --offline: after the first run uv must not contact PyPI each time the browser starts the companion.
-Set-Content "$here\glossa-companion.cmd" "@echo off`r`nuv run --offline --quiet --script `"%~dp0glossa_companion.py`"" -Encoding ascii
+Set-Content "$here\glossa-companion.cmd" "@echo off`r`n`"$uv`" run --offline --quiet --script `"%~dp0glossa_companion.py`"" -Encoding ascii
 
 $manifest = @{
   name = 'com.glossa.companion'
@@ -25,5 +27,5 @@ foreach ($key in 'Google\Chrome', 'Microsoft\Edge', 'BraveSoftware\Brave-Browser
   Set-ItemProperty -Path $path -Name '(default)' -Value "$here\com.glossa.companion.json"
 }
 
-if ($Download) { uv run --script "$here\glossa_companion.py" --download }
+if ($Download) { & $uv run --script "$here\glossa_companion.py" --download }
 Write-Host 'Registered. Restart the browser, then load Glossa.'
