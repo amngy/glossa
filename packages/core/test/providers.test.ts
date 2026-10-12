@@ -3,7 +3,6 @@ import {
   buildExplainPrompt,
   cleanTranslation,
   deeplTargetLanguage,
-  FallbackDictionary,
   parseDictionaryReply,
   pickVoice,
   LruCache,
@@ -80,36 +79,6 @@ describe('WiktionaryDictionary', () => {
     const entries = await new WiktionaryDictionary().lookup('映画を', 'ja');
     expect(entries[0]?.senses[0]?.definition).toBe('movie');
     expect(fetch).toHaveBeenCalledTimes(2);
-  });
-});
-
-const entry = (definition: string) => ({
-  language: 'Hungarian',
-  partOfSpeech: 'noun',
-  senses: [{ definition, examples: [] }],
-  source: { name: 'test' },
-});
-
-describe('FallbackDictionary', () => {
-  const answers = (...entries: ReturnType<typeof entry>[]) => ({ name: 'a', lookup: async () => entries });
-  const fails = { name: 'down', lookup: async () => Promise.reject(new Error('503')) };
-
-  it('returns the first source that has entries', async () => {
-    const dictionary = new FallbackDictionary([answers(), answers(entry('dog')), answers(entry('cat'))]);
-    expect((await dictionary.lookup('kutya', 'hu'))[0]?.senses[0]?.definition).toBe('dog');
-  });
-
-  it('survives a failing source when another answers', async () => {
-    const dictionary = new FallbackDictionary([fails, answers(entry('dog'))]);
-    expect(await dictionary.lookup('kutya', 'hu')).toHaveLength(1);
-  });
-
-  it('reports "no entry" rather than an error when a reachable source is empty', async () => {
-    expect(await new FallbackDictionary([fails, answers()]).lookup('x', 'hu')).toEqual([]);
-  });
-
-  it('throws only when every source failed', async () => {
-    await expect(new FallbackDictionary([fails, fails]).lookup('x', 'hu')).rejects.toThrow('503');
   });
 });
 

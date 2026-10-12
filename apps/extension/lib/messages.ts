@@ -6,6 +6,8 @@ import type { OnDeviceStatus } from './on-device';
 export interface MessageMap {
   translate: { request: TranslationRequest; response: string };
   lookup: { request: { word: string; lang: string }; response: DictionaryEntry[] };
+  /** The same lookup, answered by the configured AI model. */
+  lookupAi: { request: { word: string; lang: string }; response: DictionaryEntry[] };
   explain: { request: ExplainRequest; response: string };
   /** Runs a tiny request against the configured AI provider. */
   testAi: { request: null; response: string };

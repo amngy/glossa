@@ -1,12 +1,5 @@
 import { browser, defineBackground } from '#imports';
-import {
-  FallbackDictionary,
-  LlmDictionary,
-  LlmExplainer,
-  LruCache,
-  WiktionaryDictionary,
-  type Dictionary,
-} from '@glossa/core';
+import { LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
 import { handleMessages } from '@/lib/messages';
 import { askOffscreen } from '@/lib/on-device-client';
 import { createChatModel, createTranslator, describeNetworkError } from '@/lib/providers';
@@ -15,7 +8,7 @@ import { getSettings, updateSettings, watchSettings } from '@/lib/settings';
 import { syncVideoSites, watchVideoSites } from '@/lib/video-sites';
 
 export default defineBackground(() => {
-  const wiktionary = new WiktionaryDictionary();
+  const dictionary = new WiktionaryDictionary();
   // Best effort: the browser may stop this worker when idle, which clears the cache.
   const cache = new LruCache<string, Promise<unknown>>(1000);
 
@@ -59,17 +52,16 @@ export default defineBackground(() => {
       return cached(key, async () => (await createTranslator()).translate(request));
     },
 
-    async lookup({ word, lang }) {
-      const { ai, nativeLanguage } = await getSettings();
-      const aiModel = ai.provider === 'on-device' ? ai.onDeviceModel : ai.model;
-      const aiKey = ai.provider === 'none' ? 'none' : `${ai.provider}:${aiModel}`;
-      return cached(`d|${lang}|${nativeLanguage}|${aiKey}|${word}`, async () => {
-        const sources: Dictionary[] = [wiktionary];
-        // The learner's AI model is the last resort: it knows inflected forms and languages Wiktionary lacks.
-        const model = ai.provider === 'none' ? null : await createChatModel().catch(() => null);
-        if (model) sources.push(new LlmDictionary(model, nativeLanguage));
-        return new FallbackDictionary(sources).lookup(word, lang);
-      });
+    lookup({ word, lang }) {
+      return cached(`d|${lang}|${word}`, () => dictionary.lookup(word, lang));
+    },
+
+    // On request only: it sends the word to the viewer's AI model, for what Wiktionary lacks.
+    async lookupAi({ word, lang }) {
+      const [model, settings] = await Promise.all([createChatModel(), getSettings()]);
+      if (!model) throw new Error('Choose an AI provider in Glossa’s settings.');
+      const key = `da|${model.name}|${settings.nativeLanguage}|${lang}|${word}`;
+      return cached(key, () => new LlmDictionary(model, settings.nativeLanguage).lookup(word, lang));
     },
 
     async explain(request) {

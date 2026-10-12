@@ -429,6 +429,18 @@ export abstract class SubtitleController {
     );
   }
 
+  /** Defines the card's word with the AI model, after the dictionary had no entry. */
+  lookupWithAi(): void {
+    const { card } = this.store.get();
+    if (!card) return;
+    const id = card.id;
+    this.updateCard(id, { aiLookup: true, entries: { state: 'loading' } });
+    sendMessage('lookupAi', { word: card.word, lang: card.lang }).then(
+      (value) => this.updateCard(id, { entries: { state: 'done', value } }),
+      (error: unknown) => this.updateCard(id, { entries: { state: 'error', message: errorMessage(error) } }),
+    );
+  }
+
   /** Opens a card explaining the whole line with AI. */
   openLineCard(cueIndex: number, anchor: CardAnchor): void {
     const { track } = this.store.get();

@@ -9,14 +9,37 @@ const CARD_WIDTH = 340;
 const MIN_SPACE_ABOVE = 260;
 const keepFocus = (event: MouseEvent) => event.preventDefault();
 
-function Definitions({ entries, word }: { entries: Async<DictionaryEntry[]>; word: string }) {
+function Definitions({
+  card,
+  controller,
+  aiEnabled,
+}: {
+  card: CardState;
+  controller: SubtitleController;
+  aiEnabled: boolean;
+}) {
+  const { entries, word } = card;
   switch (entries.state) {
     case 'loading':
       return <p class="glossa-muted">Looking up…</p>;
     case 'error':
       return <p class="glossa-muted">Dictionary unavailable: {entries.message}</p>;
     case 'done':
-      if (entries.value.length === 0) return <p class="glossa-muted">No dictionary entry for “{word}”.</p>;
+      if (entries.value.length === 0) {
+        return (
+          <p class="glossa-muted">
+            No dictionary entry for “{word}”.
+            {aiEnabled && !card.aiLookup && (
+              <>
+                {' '}
+                <button class="glossa-link" onMouseDown={keepFocus} onClick={() => controller.lookupWithAi()}>
+                  Look up with AI
+                </button>
+              </>
+            )}
+          </p>
+        );
+      }
       const { source } = entries.value[0]!;
       return (
         <div class="glossa-definitions">
@@ -161,7 +184,7 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
         </div>
       )}
 
-      {isWord && <Definitions entries={card.entries} word={card.word} />}
+      {isWord && <Definitions card={card} controller={controller} aiEnabled={aiEnabled} />}
 
       <div class="glossa-card-ai">
         <Explanation card={card} controller={controller} aiEnabled={aiEnabled} />

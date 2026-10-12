@@ -11,7 +11,6 @@ export { pickVoice, type VoiceLike } from './text/voice';
 
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';
-export { FallbackDictionary } from './providers/fallback-dictionary';
 export { LlmDictionary, parseDictionaryReply } from './providers/llm-dictionary';
 export { LibreTranslateTranslator, type LibreTranslateConfig } from './providers/libretranslate';
 export { DeepLTranslator, deeplTargetLanguage } from './providers/deepl';
