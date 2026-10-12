@@ -39,7 +39,9 @@ talks to. You can also run every one of those services yourself.
   automatically after every line. Jump to the previous or next line, or replay the current one.
 - **Explain a line.** Ask the AI to break down a whole sentence.
 - **Saved words.** Star words as you watch. They stay highlighted in later videos. Export them as CSV or
-  as an Anki deck, along with the sentence they appeared in.
+  as an Anki deck, along with the sentence they appeared in. Mark words you already know with the check on
+  the word card: they're never highlighted. In Settings you can also underline every word you haven't
+  saved or marked, so the new ones stand out.
 - **Zero setup by default.** It works out of the box with YouTube's own translations, Chrome's on-device
   translator and Wiktionary. Add DeepL, LibreTranslate or an AI model only if you want them.
 - **Private.** No Glossa account, server, analytics or tracking. See [Privacy](#privacy).

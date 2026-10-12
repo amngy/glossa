@@ -81,7 +81,11 @@ function Line({
           return parts.map((part, j) => [j > 0 && <br key={`${i}-${j}-br`} />, part]);
         }
         const classes = ['glossa-word'];
-        if (state.savedKeys.has(vocabKey(token.text, lang))) classes.push('glossa-word-saved');
+        const key = vocabKey(token.text, lang);
+        if (!state.knownKeys.has(key)) {
+          if (state.savedKeys.has(key)) classes.push('glossa-word-saved');
+          else if (state.settings.markNewWords) classes.push('glossa-word-new');
+        }
         if (token.text === selected) classes.push('glossa-word-selected');
         return (
           <span

@@ -32,7 +32,7 @@ import {
   type TranslatorChoice,
 } from '@/lib/settings';
 import { getVideoSites, removeVideoSite, watchVideoSites } from '@/lib/video-sites';
-import { clearVocab, getVocab, removeWord, watchVocab } from '@/lib/vocab-store';
+import { clearKnown, clearVocab, getKnown, getVocab, removeWord, watchKnown, watchVocab } from '@/lib/vocab-store';
 
 type Notice = { kind: 'ok' | 'error'; text: string } | null;
 
@@ -103,6 +103,12 @@ function SavedWords() {
     return watchVocab(setWords);
   }, []);
 
+  const [known, setKnownKeys] = useState<string[]>([]);
+  useEffect(() => {
+    void getKnown().then(setKnownKeys);
+    return watchKnown(setKnownKeys);
+  }, []);
+
   const sorted = [...words].sort((a, b) => b.createdAt - a.createdAt);
   const date = new Date().toISOString().slice(0, 10);
 
@@ -126,6 +132,16 @@ function SavedWords() {
           onClick={() => download(`glossa-anki-${date}.txt`, toAnkiTsv(sorted), 'text/plain;charset=utf-8')}
         >
           Export for Anki
+        </button>
+        <button
+          class="button"
+          disabled={known.length === 0}
+          title="Words you marked as known in the word card; they aren't highlighted"
+          onClick={() => {
+            if (confirm(`Forget all ${known.length} known words?`)) void clearKnown();
+          }}
+        >
+          Clear known words ({known.length})
         </button>
         <span class="spacer" />
         <button
@@ -582,6 +598,10 @@ function Options() {
         <label class="switch">
           <input type="checkbox" checked={settings.autoPause} onChange={(event) => change({ autoPause: event.currentTarget.checked })} />
           Pause after every line
+        </label>
+        <label class="switch">
+          <input type="checkbox" checked={settings.markNewWords} onChange={(event) => change({ markNewWords: event.currentTarget.checked })} />
+          Underline words I haven’t saved or marked as known
         </label>
         <Field label={`Subtitle size: ${Math.round(settings.fontScale * 100)}%`}>
           <input

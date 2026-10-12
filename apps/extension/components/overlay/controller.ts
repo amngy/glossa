@@ -20,7 +20,7 @@ import { sendMessage } from '@/lib/messages';
 import { speak as speakAloud } from '@/lib/speech';
 import { MAX_SUBTITLE_POSITION, updateSettings, watchSettings, type Settings, type TranslationDisplay } from '@/lib/settings';
 import type { Store } from '@/lib/store';
-import { getVocab, saveWord, vocabKey, watchVocab } from '@/lib/vocab-store';
+import { getKnown, getVocab, saveWord, setKnown, vocabKey, watchKnown, watchVocab } from '@/lib/vocab-store';
 import type { CardAnchor, CardState, LineTranslation, OverlayState } from './state';
 
 const TRANSLATION_DISPLAY_ORDER: TranslationDisplay[] = ['show', 'blur', 'hide'];
@@ -81,9 +81,13 @@ export abstract class SubtitleController {
       this.store.set({ savedKeys: new Set(words.map((w) => vocabKey(w.word, w.lang))) });
     const unwatchVocab = watchVocab(setSaved);
     void getVocab().then(setSaved);
+    const setKnownKeys = (keys: string[]) => this.store.set({ knownKeys: new Set(keys) });
+    const unwatchKnown = watchKnown(setKnownKeys);
+    void getKnown().then(setKnownKeys);
     this.ctx.onInvalidated(() => {
       unwatchSettings();
       unwatchVocab();
+      unwatchKnown();
     });
 
     this.store.set({ browserTranslatorMissing: !isBrowserTranslatorSupported() });
@@ -548,6 +552,12 @@ export abstract class SubtitleController {
       sentenceTranslation: this.lineTranslationText(card.cueIndex),
       source: { ...this.source(time), time },
     });
+  }
+
+  async toggleKnown(): Promise<void> {
+    const { card, knownKeys } = this.store.get();
+    if (!card || card.kind !== 'word') return;
+    await setKnown(card.word, card.lang, !knownKeys.has(vocabKey(card.word, card.lang)));
   }
 
   async speak(text: string, lang: string): Promise<void> {
