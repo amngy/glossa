@@ -1,4 +1,5 @@
 import { cleanCueText } from './clean';
+import { mergeOverlappingCues } from './overlaps';
 import type { Cue } from './types';
 
 /** Parses "hh:mm:ss.mmm", "mm:ss.mmm" or the SRT form "hh:mm:ss,mmm" into seconds. */
@@ -43,5 +44,5 @@ export function parseTextSubtitles(input: string): Cue[] {
     if (text) cues.push({ start, end, text });
   }
 
-  return cues.sort((a, b) => a.start - b.start);
+  return mergeOverlappingCues(cues.sort((a, b) => a.start - b.start));
 }

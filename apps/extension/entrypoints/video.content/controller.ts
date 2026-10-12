@@ -2,6 +2,7 @@ import {
   baseLanguage,
   cleanCueText,
   languageName,
+  mergeOverlappingCues,
   type Cue,
   type SubtitleTrack,
 } from '@glossa/core';
@@ -44,7 +45,7 @@ function readCues(track: TextTrack): Cue[] {
     const text = cleanCueText(String(cue.text));
     if (text) cues.push({ start: cue.startTime, end: cue.endTime, text });
   }
-  return cues.sort((a, b) => a.start - b.start);
+  return mergeOverlappingCues(cues.sort((a, b) => a.start - b.start));
 }
 
 function isLargeEnough(video: HTMLVideoElement): boolean {

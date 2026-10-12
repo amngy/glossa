@@ -46,6 +46,21 @@ NOTE this is ignored
       { start: 2.5, end: 4, text: "Wie geht's?" },
     ]);
   });
+
+  it('keeps an earlier line on screen while a later cue overlaps it', () => {
+    const vtt = `WEBVTT
+
+00:00:10.000 --> 00:00:16.000
+昨日は映画を見に行きました
+
+00:00:12.000 --> 00:00:16.000
+本当にありがとうございます
+`;
+    expect(parseTextSubtitles(vtt)).toEqual([
+      { start: 10, end: 12, text: '昨日は映画を見に行きました' },
+      { start: 12, end: 16, text: '昨日は映画を見に行きました\n本当にありがとうございます' },
+    ]);
+  });
 });
 
 describe('parseYouTubeJson3', () => {
