@@ -22,6 +22,11 @@ Direct and concise: what changed, what was verified (with results), the recommen
 1. **Privacy is the product.** No Glossa server, no analytics, no tracking. A new outgoing request must be
    one the user chose (their translator or AI model) and must be listed in the README's Privacy section.
    API keys stay in `local:secrets` and are only read by the background worker.
+   **Local first:** every feature needs a path that runs on the user's machine (on-device model, browser
+   API, local Ollama). A remote server or service is an opt-in extra, off by default, for a server the
+   user hosts or an existing one they connect. Check "local" browser APIs for hidden remote paths (e.g.
+   speech voices that are not `localService`). Downloaded models are opt-in. Say what leaves the machine
+   in every issue and PR.
 2. **AI goes through `ChatModel`** (`packages/core/src/providers/types.ts`); prompts live in `prompts.ts`.
    After any prompt or model-call change, run the translation check and report before/after numbers:
    `pnpm --filter @glossa/core eval <ollama-model…>` (cases in `packages/core/eval/ja-en.json`; the
