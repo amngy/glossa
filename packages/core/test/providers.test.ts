@@ -105,23 +105,33 @@ describe('parseDictionaryReply', () => {
 });
 
 describe('pickVoice', () => {
-  const voice = (name: string, lang: string, isDefault = false) => ({ name, lang, default: isDefault });
+  const voice = (name: string, lang: string, localService = true, isDefault = false) => ({
+    name,
+    lang,
+    localService,
+    default: isDefault,
+  });
   const voices = [
-    voice('Microsoft David', 'en-US', true),
+    voice('Microsoft David', 'en-US', true, true),
     voice('Microsoft Maria', 'pt-PT'),
-    voice('Google português do Brasil', 'pt-BR'),
-    voice('Microsoft Tamas Online (Natural)', 'hu-HU'),
+    voice('Google português do Brasil', 'pt-BR', false),
+    voice('Microsoft Tamas Online (Natural)', 'hu-HU', false),
   ];
 
   it('never falls back to an unrelated voice', () => {
     expect(pickVoice(voices, 'ja')).toBeUndefined();
-    expect(pickVoice([voice('Microsoft David', 'en-US', true)], 'hu')).toBeUndefined();
+    expect(pickVoice([voice('Microsoft David', 'en-US', true, true)], 'hu')).toBeUndefined();
+  });
+
+  it('never picks a voice that sends the text to a remote service', () => {
+    expect(pickVoice(voices, 'hu')).toBeUndefined();
+    expect(pickVoice(voices, 'pt-BR')?.name).toBe('Microsoft Maria');
   });
 
   it('matches the base language and prefers the exact region', () => {
-    expect(pickVoice(voices, 'hu')?.name).toBe('Microsoft Tamas Online (Natural)');
-    expect(pickVoice(voices, 'pt-BR')?.name).toBe('Google português do Brasil');
-    expect(pickVoice(voices, 'pt')).toBeDefined();
+    const local = [voice('Microsoft Maria', 'pt-PT'), voice('Microsoft Francisca', 'pt-BR')];
+    expect(pickVoice(local, 'pt-BR')?.name).toBe('Microsoft Francisca');
+    expect(pickVoice(local, 'pt')).toBeDefined();
     expect(pickVoice([voice('Android hu', 'hu_HU')], 'hu-HU')).toBeDefined();
   });
 });
