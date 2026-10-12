@@ -203,19 +203,12 @@ own API) to load the track you picked. Then it reuses that signed URL to downloa
 YouTube's machine translation of it with `&tlang=<your language>`. YouTube's own caption window is
 hidden while Glossa is on.
 
-`packages/core` doesn't depend on the extension. It's meant to be reused by the web player and server
-on the roadmap.
+`packages/core` doesn't depend on the extension, so a web player can reuse it later.
 
 ## Roadmap
 
-- **More sites:** Netflix, Prime Video and Disney+.
-- **Web player (PWA):** play local files with subtitle files, YouTube links, and Jellyfin or Plex libraries.
-  It installs as an app on phones, tablets and TVs that can't run extensions.
-- **Self-hosted server (Docker):** Whisper transcription for videos without subtitles, a shared AI or
-  translation endpoint for a household or classroom, and syncing saved words between devices.
-- **Mobile:** Firefox for Android (extensions work there) and the PWA above.
-- **Learning:** word frequency and difficulty, known-word tracking, spaced-repetition review in the app.
-- **Store listings** for the Chrome Web Store, Edge Add-ons and Firefox Add-ons.
+Open work is tracked in [GitHub Issues](https://github.com/amngy/glossa/issues): more sites,
+a web player, mobile, learning tools and store listings.
 
 Ideas and help are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
