@@ -31,7 +31,8 @@ talks to. You can also run every one of those services yourself.
 - **Word cards.** Click a word to see its translation, dictionary definitions from Wiktionary (with an
   AI model, a "Look up with AI" button covers words Wiktionary lacks), and, with an AI model, an explanation of what it means
   *in this sentence*: grammar, conjugation, idioms. The model can run on your own computer, free and
-  private. The Listen button reads the word aloud with a voice for its language, if your device has one.
+  private. The Listen button reads the word aloud with an on-device voice for its language, if you have
+  one. Voices that send the text to an online service are never used.
 - **Line translation.** Each line's translation is shown below it. You can show it, blur it until you hover,
   or hide it (<kbd>Q</kbd>).
 - **Made for studying.** The video pauses while your mouse is over the subtitles. It can also pause
