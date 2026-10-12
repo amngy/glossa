@@ -556,7 +556,7 @@ export abstract class SubtitleController {
     this.updateCard(id, { speechError: undefined });
     if (await speakAloud(text, lang)) return;
     this.updateCard(id, {
-      speechError: `No ${languageName(lang)} voice is installed. Add one in your system’s speech settings.`,
+      speechError: `No on-device ${languageName(lang)} voice is installed. Add one in your system’s speech settings.`,
     });
   }
 
