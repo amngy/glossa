@@ -154,6 +154,11 @@ export function OnDeviceModelSetup({ value, onChange }: { value: string; onChang
         ))}
       </div>
 
+      <p class="muted small">
+        For better translations than these, run <code>gemma4:e4b</code> with Ollama and pick “OpenAI, Gemini, Ollama or
+        another server” below.
+      </p>
+
       {!status && !error && <p class="muted">Checking…</p>}
       {status && !status.supported && <p class="error">{status.reason}</p>}
       {status?.supported &&
