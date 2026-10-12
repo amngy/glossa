@@ -99,6 +99,8 @@ export interface OverlayState {
   card?: CardState;
   /** `vocabKey`s of saved words, for highlighting. */
   savedKeys: ReadonlySet<string>;
+  /** `vocabKey`s of words marked as known: never highlighted. */
+  knownKeys: ReadonlySet<string>;
   browserTranslatorMissing: boolean;
 }
 
@@ -119,6 +121,7 @@ export function initialState(settings: Settings): OverlayState {
     adShowing: false,
     playerHeight: 480,
     savedKeys: new Set(),
+    knownKeys: new Set(),
     browserTranslatorMissing: false,
   };
 }

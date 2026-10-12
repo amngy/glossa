@@ -1,7 +1,7 @@
 import { baseLanguage, languageName, type DictionaryEntry } from '@glossa/core';
 import { vocabKey } from '@/lib/vocab-store';
 import type { SubtitleController } from './controller';
-import { CloseIcon, SpeakIcon, StarIcon } from './icons';
+import { CheckIcon, CloseIcon, SpeakIcon, StarIcon } from './icons';
 import type { Async, CardState, OverlayState } from './state';
 
 const CARD_WIDTH = 340;
@@ -120,6 +120,7 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
 
   const isWord = card.kind === 'word';
   const saved = isWord && state.savedKeys.has(vocabKey(card.word, card.lang));
+  const known = isWord && state.knownKeys.has(vocabKey(card.word, card.lang));
   const sameLanguage = baseLanguage(card.lang) === baseLanguage(state.settings.nativeLanguage);
   const aiEnabled = state.settings.ai.provider !== 'none';
   const { translation } = card;
@@ -145,6 +146,18 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
         >
           <SpeakIcon />
         </button>
+        {isWord && (
+          <button
+            class={`glossa-icon-button${known ? ' glossa-saved' : ''}`}
+            title={known ? 'Known — click to unmark' : 'Mark as known'}
+            aria-label={known ? 'Known' : 'Mark as known'}
+            aria-pressed={known}
+            onMouseDown={keepFocus}
+            onClick={() => void controller.toggleKnown()}
+          >
+            <CheckIcon />
+          </button>
+        )}
         {isWord && (
           <button
             class={`glossa-icon-button${saved ? ' glossa-saved' : ''}`}

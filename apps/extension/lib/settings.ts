@@ -33,6 +33,8 @@ export interface Settings {
   translationDisplay: TranslationDisplay;
   pauseOnHover: boolean;
   autoPause: boolean;
+  /** Underline words that are neither saved nor marked as known, so new ones stand out. */
+  markNewWords: boolean;
   fontScale: number;
   /** How far the subtitles are raised from their usual spot at the bottom, in percent of the video's height. */
   subtitlePosition: number;
@@ -63,6 +65,7 @@ export const DEFAULT_SETTINGS: Settings = {
   translationDisplay: 'show',
   pauseOnHover: true,
   autoPause: false,
+  markNewWords: false,
   fontScale: 1,
   subtitlePosition: 0,
 };
