@@ -25,6 +25,7 @@ import {
   MAX_SUBTITLE_POSITION,
   updateSecrets,
   updateSettings,
+  watchSettings,
   type AiProvider,
   type Secrets,
   type Settings,
@@ -298,7 +299,9 @@ function OpenAICompatibleSetup({
 }
 
 function Options() {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  // What's stored (also changed from the overlay and the popup) and the edits not saved yet on top of it.
+  const [stored, setStored] = useState<Settings | null>(null);
+  const [draft, setDraft] = useState<Partial<Settings>>({});
   const [secrets, setSecrets] = useState<Secrets | null>(null);
   const [dirty, setDirty] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
@@ -307,18 +310,20 @@ function Options() {
 
   useEffect(() => {
     void Promise.all([getSettings(), getSecrets()]).then(([loadedSettings, loadedSecrets]) => {
-      setSettings(loadedSettings);
+      setStored(loadedSettings);
       setSecrets(loadedSecrets);
     });
     if (location.hash === '#words') {
       setTimeout(() => document.getElementById('words')?.scrollIntoView(), 100);
     }
+    return watchSettings(setStored);
   }, []);
 
-  if (!settings || !secrets) return null;
+  if (!stored || !secrets) return null;
 
+  const settings: Settings = { ...stored, ...draft };
   const change = (patch: Partial<Settings>) => {
-    setSettings({ ...settings, ...patch });
+    setDraft({ ...draft, ...patch });
     setDirty(true);
     setNotice(null);
   };
@@ -333,7 +338,9 @@ function Options() {
     // Ask for access to the configured servers first: browsers only allow it during a click.
     requestOrigins(requiredOrigins(settings))
       .then(async (granted) => {
-        await updateSettings(settings);
+        // Only what was edited here: saving the whole page would undo changes made in the overlay meanwhile.
+        setStored(await updateSettings(draft));
+        setDraft({});
         await updateSecrets(secrets);
         setDirty(false);
         setNotice(

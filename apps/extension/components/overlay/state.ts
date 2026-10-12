@@ -43,7 +43,11 @@ export interface CardState {
   anchor: CardAnchor;
   translation: Async<string>;
   entries: Async<DictionaryEntry[]>;
+  /** The viewer asked their AI model for the definition after the dictionary had none. */
+  aiLookup?: boolean;
   explanation: Async<string>;
+  /** Why Listen did nothing, e.g. no voice for the language. */
+  speechError?: string;
 }
 
 /** A subtitle track the viewer can pick in the toolbar. */

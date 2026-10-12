@@ -6,13 +6,18 @@ import {
   findBestOverlap,
   findCueIndexAtOrBefore,
   isBrowserTranslatorSupported,
+  languageFromFileName,
+  languageName,
+  parseTextSubtitles,
   subtitleContext,
   type Cue,
   type ExplainRequest,
   type SubtitleTrack,
   type TranslationRequest,
 } from '@glossa/core';
+import { detectLanguage } from '@/lib/detect-language';
 import { sendMessage } from '@/lib/messages';
+import { speak as speakAloud } from '@/lib/speech';
 import { MAX_SUBTITLE_POSITION, updateSettings, watchSettings, type Settings, type TranslationDisplay } from '@/lib/settings';
 import type { Store } from '@/lib/store';
 import { getVocab, saveWord, vocabKey, watchVocab } from '@/lib/vocab-store';
@@ -28,6 +33,19 @@ const HOVER_GRACE_MS = 300;
 
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** A sample of a track's text for language detection. */
+export function sampleText(cues: Cue[]): string {
+  return cues
+    .slice(0, 40)
+    .map((cue) => cue.text)
+    .join('\n');
+}
+
+/** Last resort when nothing says which language a track is in; the viewer can correct it. */
+export function fallbackLanguage(): string {
+  return baseLanguage(document.documentElement.lang || navigator.language || 'en');
 }
 
 /**
@@ -87,6 +105,27 @@ export abstract class SubtitleController {
 
   /** Loads a subtitle file the viewer picked. Only offered where `canLoadFile` is set. */
   loadFile(_file: File): void {}
+
+  /** Reads a subtitle file the viewer picked. Shows an error and returns null if it has no lines. */
+  protected async readSubtitleFile(file: File): Promise<SubtitleTrack | null> {
+    let cues: Cue[];
+    try {
+      cues = parseTextSubtitles(await file.text());
+    } catch (error) {
+      this.store.set({ status: 'error', error: `Couldn’t read ${file.name}: ${errorMessage(error)}` });
+      return null;
+    }
+    if (cues.length === 0) {
+      this.store.set({ status: 'error', error: `No subtitles found in ${file.name}. Glossa reads .srt and .vtt files.` });
+      return null;
+    }
+    const lang =
+      languageFromFileName(file.name) ??
+      (await detectLanguage(sampleText(cues))) ??
+      this.store.get().track?.lang ??
+      fallbackLanguage();
+    return { lang, label: file.name, cues };
+  }
 
   /** Corrects the current track's language. Only offered where `languageGuessed` is set. */
   setTrackLanguage(_lang: string): void {}
@@ -427,6 +466,18 @@ export abstract class SubtitleController {
     );
   }
 
+  /** Defines the card's word with the AI model, after the dictionary had no entry. */
+  lookupWithAi(): void {
+    const { card } = this.store.get();
+    if (!card) return;
+    const id = card.id;
+    this.updateCard(id, { aiLookup: true, entries: { state: 'loading' } });
+    sendMessage('lookupAi', { word: card.word, lang: card.lang }).then(
+      (value) => this.updateCard(id, { entries: { state: 'done', value } }),
+      (error: unknown) => this.updateCard(id, { entries: { state: 'error', message: errorMessage(error) } }),
+    );
+  }
+
   /** Opens a card explaining the whole line with AI. */
   openLineCard(cueIndex: number, anchor: CardAnchor): void {
     const { track } = this.store.get();
@@ -499,13 +550,14 @@ export abstract class SubtitleController {
     });
   }
 
-  speak(text: string, lang: string): void {
-    if (!('speechSynthesis' in window)) return;
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = 0.9;
-    speechSynthesis.speak(utterance);
+  async speak(text: string, lang: string): Promise<void> {
+    const id = this.store.get().card?.id;
+    if (id === undefined) return;
+    this.updateCard(id, { speechError: undefined });
+    if (await speakAloud(text, lang)) return;
+    this.updateCard(id, {
+      speechError: `No on-device ${languageName(lang)} voice is installed. Add one in your system’s speech settings.`,
+    });
   }
 
   // --------------------------------------------------------------- settings
