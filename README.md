@@ -28,9 +28,10 @@ talks to. You can also run every one of those services yourself.
   video on this page**. Glossa uses the video's own subtitle tracks, or a `.srt` or `.vtt` file you load.
   If the page also has subtitles in your language, they become the line translation.
   See [Other sites](#other-sites).
-- **Word cards.** Click a word to see its translation, dictionary definitions from Wiktionary, and,
-  with an AI model, an explanation of what it means *in this sentence*: grammar, conjugation, idioms.
-  The model can run on your own computer, free and private.
+- **Word cards.** Click a word to see its translation, dictionary definitions from Wiktionary (with an
+  AI model, a "Look up with AI" button covers words Wiktionary lacks), and, with an AI model, an explanation of what it means
+  *in this sentence*: grammar, conjugation, idioms. The model can run on your own computer, free and
+  private. The Listen button reads the word aloud with a voice for its language, if your device has one.
 - **Line translation.** Each line's translation is shown below it. You can show it, blur it until you hover,
   or hide it (<kbd>Q</kbd>).
 - **Made for studying.** The video pauses while your mouse is over the subtitles. It can also pause
@@ -101,7 +102,7 @@ word fits. AI translation uses them the same way, and DeepL gets them as context
 | Option | Cost | Notes |
 | --- | --- | --- |
 | Built into the browser | Free, on your device | Chrome's own model (Gemini Nano). Chrome 138+ on a computer with 22 GB free disk space and a GPU with more than 4 GB of memory or 16 GB of RAM. Writes English, Spanish, Japanese, German and French. |
-| Glossa's on-device model | Free, on your device | Downloads [Qwen3.5](https://huggingface.co/Qwen) once and runs it on your graphics card with [WebLLM](https://github.com/mlc-ai/web-llm), even offline. Pick Standard (1.1 GB, recommended) or Large (2.4 GB, needs about 4 GB of GPU memory). Chrome and Edge only for now. |
+| Glossa's on-device model | Free, on your device | Downloads [Qwen3.5](https://huggingface.co/Qwen) once and runs it on your graphics card with [WebLLM](https://github.com/mlc-ai/web-llm), even offline. Pick Standard (1.1 GB, recommended), Large (2.4 GB, needs about 4 GB of GPU memory) or Best (5.1 GB, needs about 8 GB). Chrome and Edge only for now. |
 | Claude (Anthropic) | Pay per use | Paste an API key from [console.anthropic.com](https://console.anthropic.com). Defaults to Claude Opus 5.5. The best explanations. |
 | Ollama, LM Studio or another server | Free if you run it | Any OpenAI-compatible server: [Ollama](https://ollama.com) (`http://localhost:11434`), [LM Studio](https://lmstudio.ai) (`http://localhost:1234/v1`), OpenRouter, a vLLM server, and so on. Good models: `gemma4:e4b` (best in our Japanese test), `qwen3.5:9b` or `qwen3.5:4b`. |
 
@@ -140,8 +141,8 @@ browser:
 - **Wiktionary** (`en.wiktionary.org`): words you click, to look up definitions.
 - **The translator you chose**: words and lines you look at. The built-in browser translator runs on your
   device and sends nothing.
-- **The AI model you chose**, if any: the word or line you ask about, with the lines around it. The two
-  on-device options send nothing.
+- **The AI model you chose**, if any: the word or line you ask about, with the lines around it, or the
+  word when you press "Look up with AI". The two on-device options send nothing.
 - **Hugging Face**, once, if you download Glossa's on-device model.
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads.
 
@@ -219,4 +220,4 @@ Glossa is free software, licensed under the [GNU Affero General Public License v
 If you run a modified version as a service for others, you must share its source.
 
 Dictionary definitions come from [Wiktionary](https://en.wiktionary.org) under
-[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each word card links to its source.
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each word card names and links its source.

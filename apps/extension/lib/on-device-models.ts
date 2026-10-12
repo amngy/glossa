@@ -51,6 +51,16 @@ export const ON_DEVICE_MODELS: readonly OnDeviceModel[] = [
       f16: { id: 'Qwen3.5-4B-q4f16_1-MLC', revision: '44b42469f9e192814bfd90440e3b377d89ba7a13', vramMB: 3868 },
     },
   },
+  {
+    id: 'qwen3.5-9b',
+    label: 'Best',
+    name: 'Qwen3.5 9B',
+    size: 5.1,
+    description: 'The best explanations of the three. Needs a graphics card with at least 8 GB of memory.',
+    builds: {
+      f16: { id: 'Qwen3.5-9B-q4f16_1-MLC', revision: 'c7c5d3f5a81e37b8facbb72970940a1b131314a8', vramMB: 6433 },
+    },
+  },
 ];
 
 export const DEFAULT_ON_DEVICE_MODEL = 'qwen3.5-2b';

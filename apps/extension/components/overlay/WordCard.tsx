@@ -9,14 +9,38 @@ const CARD_WIDTH = 340;
 const MIN_SPACE_ABOVE = 260;
 const keepFocus = (event: MouseEvent) => event.preventDefault();
 
-function Definitions({ entries, word }: { entries: Async<DictionaryEntry[]>; word: string }) {
+function Definitions({
+  card,
+  controller,
+  aiEnabled,
+}: {
+  card: CardState;
+  controller: SubtitleController;
+  aiEnabled: boolean;
+}) {
+  const { entries, word } = card;
   switch (entries.state) {
     case 'loading':
       return <p class="glossa-muted">Looking up…</p>;
     case 'error':
       return <p class="glossa-muted">Dictionary unavailable: {entries.message}</p>;
     case 'done':
-      if (entries.value.length === 0) return <p class="glossa-muted">No dictionary entry for “{word}”.</p>;
+      if (entries.value.length === 0) {
+        return (
+          <p class="glossa-muted">
+            No dictionary entry for “{word}”.
+            {aiEnabled && !card.aiLookup && (
+              <>
+                {' '}
+                <button class="glossa-link" onMouseDown={keepFocus} onClick={() => controller.lookupWithAi()}>
+                  Look up with AI
+                </button>
+              </>
+            )}
+          </p>
+        );
+      }
+      const { source } = entries.value[0]!;
       return (
         <div class="glossa-definitions">
           {entries.value.slice(0, 2).map((entry, i) => (
@@ -32,14 +56,13 @@ function Definitions({ entries, word }: { entries: Async<DictionaryEntry[]>; wor
               </ol>
             </div>
           ))}
-          <a
-            class="glossa-source"
-            href={`https://en.wiktionary.org/wiki/${encodeURIComponent(word)}`}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Wiktionary · CC BY-SA
-          </a>
+          {source.url ? (
+            <a class="glossa-source" href={source.url} target="_blank" rel="noreferrer noopener">
+              {source.name}
+            </a>
+          ) : (
+            <span class="glossa-source">{source.name}</span>
+          )}
         </div>
       );
     default:
@@ -118,7 +141,7 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
           title="Listen"
           aria-label="Listen"
           onMouseDown={keepFocus}
-          onClick={() => controller.speak(isWord ? card.word : card.sentence, card.lang)}
+          onClick={() => void controller.speak(isWord ? card.word : card.sentence, card.lang)}
         >
           <SpeakIcon />
         </button>
@@ -145,6 +168,8 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
         </button>
       </header>
 
+      {card.speechError && <p class="glossa-error">{card.speechError}</p>}
+
       {!isWord && (
         <p class="glossa-card-sentence" lang={card.lang}>
           {card.sentence}
@@ -159,7 +184,7 @@ export function WordCard({ card, state, controller }: { card: CardState; state: 
         </div>
       )}
 
-      {isWord && <Definitions entries={card.entries} word={card.word} />}
+      {isWord && <Definitions card={card} controller={controller} aiEnabled={aiEnabled} />}
 
       <div class="glossa-card-ai">
         <Explanation card={card} controller={controller} aiEnabled={aiEnabled} />
