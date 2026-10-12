@@ -42,3 +42,24 @@ export async function removeWord(id: string): Promise<void> {
 export async function clearVocab(): Promise<void> {
   await vocabItem.setValue([]);
 }
+
+/** `vocabKey`s of words the viewer marked as known. Kept apart from saved words, which are what's exported. */
+const knownItem = storage.defineItem<string[]>('local:known', { fallback: [] });
+
+export function getKnown(): Promise<string[]> {
+  return knownItem.getValue();
+}
+
+export function watchKnown(callback: (keys: string[]) => void): () => void {
+  return knownItem.watch((keys) => callback(keys ?? []));
+}
+
+export async function setKnown(word: string, lang: string, known: boolean): Promise<void> {
+  const key = vocabKey(word, lang);
+  const keys = (await knownItem.getValue()).filter((k) => k !== key);
+  await knownItem.setValue(known ? [...keys, key] : keys);
+}
+
+export async function clearKnown(): Promise<void> {
+  await knownItem.setValue([]);
+}
