@@ -48,6 +48,20 @@ describe('parseWiktionaryResponse', () => {
     ]);
   });
 
+  it('drops the request-for-definition placeholder and entries left empty by it', () => {
+    const placeholder =
+      'This term needs a translation to English. Please help out and add a translation, then remove the text {{rfdef}}.';
+    const data = {
+      ja: [
+        { partOfSpeech: 'Noun', language: 'Japanese', definitions: [{ definition: 'spirit' }, { definition: placeholder }] },
+        { partOfSpeech: 'Verb', language: 'Japanese', definitions: [{ definition: placeholder }] },
+      ],
+    };
+    expect(parseWiktionaryResponse(data, 'ja')).toEqual([
+      { language: 'Japanese', partOfSpeech: 'Noun', senses: [{ definition: 'spirit', examples: [] }] },
+    ]);
+  });
+
   it('returns nothing for a language without entries', () => {
     expect(parseWiktionaryResponse(response, 'de')).toEqual([]);
     expect(parseWiktionaryResponse(null, 'es')).toEqual([]);

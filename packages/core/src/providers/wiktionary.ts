@@ -34,7 +34,8 @@ export function parseWiktionaryResponse(data: unknown, lang: string): Dictionary
         definition: htmlToText(d.definition ?? ''),
         examples: (d.examples ?? []).map(htmlToText).filter(Boolean).slice(0, MAX_EXAMPLES),
       }))
-      .filter((s) => s.definition)
+      // "{{rfdef}}" is Wiktionary's request-for-definition placeholder, not a meaning.
+      .filter((s) => s.definition && !s.definition.includes('{{rfdef}}'))
       .slice(0, MAX_SENSES);
     if (senses.length === 0) continue;
     entries.push({
