@@ -3,6 +3,7 @@ import {
   cleanCueText,
   languageFromFileName,
   languageName,
+  mergeOverlappingCues,
   parseTextSubtitles,
   type Cue,
   type SubtitleTrack,
@@ -46,7 +47,7 @@ function readCues(track: TextTrack): Cue[] {
     const text = cleanCueText(String(cue.text));
     if (text) cues.push({ start: cue.startTime, end: cue.endTime, text });
   }
-  return cues.sort((a, b) => a.start - b.start);
+  return mergeOverlappingCues(cues.sort((a, b) => a.start - b.start));
 }
 
 /** A sample of a track's text for language detection. */
