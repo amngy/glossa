@@ -132,6 +132,18 @@ The on-device models aren't part of the extension download, which stays small fo
 them; only their compiled GPU code (about 6 MB per size) ships with Glossa. Small models make more
 mistakes than Claude or a bigger model on your own server, so treat their explanations as hints.
 
+**One server for a household or classroom.** Run Ollama or LibreTranslate on one computer and point
+everyone's Glossa at it; nothing leaves your network, and there is nothing to build.
+
+- *Ollama:* start it with the environment variable `OLLAMA_HOST=0.0.0.0` so other devices can reach it. In
+  each person's Glossa, choose **Ollama, LM Studio or another server** and enter
+  `http://<that computer's address>:11434`.
+- *LibreTranslate:* `docker run -p 5000:5000 libretranslate/libretranslate`, then pick LibreTranslate and
+  enter `http://<that computer's address>:5000`.
+
+Each browser asks for permission to reach that address when you save. Traffic inside a home network is
+plain HTTP, so don't expose these ports to the internet.
+
 ## Other sites
 
 Glossa doesn't run on other sites until you ask it to, so it needs no access to them at install time.
