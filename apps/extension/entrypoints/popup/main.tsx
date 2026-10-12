@@ -6,6 +6,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { baseLanguage } from '@glossa/core';
 import { languageOptions } from '@/lib/languages';
 import { sendMessage } from '@/lib/messages';
+import { CHROME_SPEECH } from '@/lib/chrome-speech';
 import { installedSpeechPack, type Pack } from '@/lib/packs';
 import { getSettings, updateSettings, watchSettings, type Settings } from '@/lib/settings';
 import {
@@ -115,7 +116,9 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
 
   if (tabId === undefined || pack === undefined) return null;
 
-  if (pack === null) {
+  const engine = settings.chromeSpeech ? CHROME_SPEECH : pack?.id;
+
+  if (!engine) {
     return (
       <section class="popup-page">
         <p class="popup-hint muted">No subtitles? Glossa can write them from the video’s sound, on this device.</p>
@@ -138,7 +141,7 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
       // Other sites need Glossa's overlay started first; YouTube's is always there.
       if (!isYouTube(tab.url)) await startOnTab(tabId);
       if (language !== settings.spokenLanguage) void updateSettings({ spokenLanguage: language });
-      await sendMessage('asrStart', { tabId, streamId, language, pack: pack.id });
+      await sendMessage('asrStart', { tabId, streamId, language, pack: engine });
       window.close();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
