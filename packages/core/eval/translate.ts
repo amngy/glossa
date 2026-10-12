@@ -3,6 +3,7 @@
  * OpenAI-compatible server (Ollama by default) and takes minutes.
  *
  *   pnpm --filter @glossa/core eval qwen3:8b gemma3:4b
+ *   EVAL_SUITE=es-en.json pnpm --filter @glossa/core eval gemma4:e4b      # another case file in eval/
  *   EVAL_BASE_URL=https://api.deepseek.com EVAL_API_KEY=… pnpm --filter @glossa/core eval deepseek-chat
  *
  * Each case lists phrases a good translation contains (any of `good`) and mistakes to avoid (`bad`).
@@ -21,7 +22,7 @@ interface Case {
   bad: string[];
 }
 
-const suite = JSON.parse(readFileSync(new URL('./ja-en.json', import.meta.url), 'utf8')) as {
+const suite = JSON.parse(readFileSync(new URL(process.env.EVAL_SUITE ?? 'ja-en.json', import.meta.url), 'utf8')) as {
   from: string;
   to: string;
   lines: Case[];
@@ -39,7 +40,7 @@ for (const model of models) {
   const translator = new LlmTranslator(new OpenAICompatibleChatModel({ baseUrl, apiKey, model }));
   const rows: { id: string; kind: string; output: string; pass: boolean; ms: number }[] = [];
   // One warm-up call, so loading the model into memory doesn't count as latency.
-  await translator.translate({ text: 'はい', from: 'ja', to: 'en' }).catch(() => {});
+  await translator.translate({ text: suite.lines[0]!.text, from: suite.from, to: suite.to }).catch(() => {});
 
   for (const [kind, cases] of [['line', suite.lines], ['word', suite.words]] as const) {
     for (const c of cases) {

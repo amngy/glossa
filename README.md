@@ -120,8 +120,9 @@ How local models compare on Japanese → English (40 lines and words from
 
 The pass check is rough (it looks for phrases a good translation contains), and some misses are fair
 translations, so read the outputs too: `pnpm --filter @glossa/core eval <model>` runs it on your machine.
-Only Japanese → English has been measured, and only models served by Ollama; Glossa's packaged on-device
-models are not in this table yet.
+A smaller Spanish → English set (18 cases, `es-en.json`; run it with `EVAL_SUITE=es-en.json`) gave
+`gemma4:e4b` 18, `qwen3.5:9b` 17 and `qwen3.5:4b` 14. Only models served by Ollama have been measured;
+Glossa's packaged on-device models are not in these tables yet.
 
 Both sections have a **Test** button. Ollama normally refuses requests from browser extensions; Glossa
 handles that for you in Chrome and Edge. If you still get a 403 (for example in Firefox), set the environment
@@ -187,6 +188,7 @@ pnpm dev            # Chrome with the extension and hot reload, opens YouTube
 pnpm dev:firefox    # same, in Firefox
 pnpm test           # unit tests (Vitest)
 pnpm --filter @glossa/core eval qwen3:8b   # Japanese→English translation check against a local Ollama model
+                                           # (EVAL_SUITE=es-en.json for Spanish→English)
 pnpm typecheck
 pnpm build
 pnpm --filter @glossa/extension zip   # a .zip of the build
