@@ -45,6 +45,10 @@ talks to. You can also run every one of those services yourself.
 - **Furigana (optional).** Japanese lines can show the reading over each kanji. It needs the "Japanese
   readings" pack, which you install from Settings; see [Optional packs](#optional-packs). Chrome and Edge only
   for now.
+- **Subtitles from sound (optional).** For a video with no subtitles at all, Glossa can listen to the tab's
+  audio and write them with Whisper, on your device. Lines show up a few seconds after they're spoken, so
+  rewind to read one. It needs a speech pack from Settings and works in Chrome and Edge; see
+  [Subtitles from sound](#subtitles-from-sound).
 - **Zero setup by default.** It works out of the box with YouTube's own translations, Chrome's on-device
   translator and Wiktionary. Add DeepL, LibreTranslate or an AI model only if you want them.
 - **Private.** No Glossa account, server, analytics or tracking. See [Privacy](#privacy).
@@ -178,7 +182,8 @@ browser:
   device and sends nothing.
 - **The AI model you chose**, if any: the word or line you ask about, with the lines around it, or the
   word when you press "Look up with AI". The two on-device options send nothing.
-- **Hugging Face**, once, if you download Glossa's on-device model.
+- **Hugging Face**, once, if you download Glossa's on-device model, and once per speech pack you install.
+  Hugging Face sees the download only; the audio never leaves your device.
 - **jsDelivr** (`cdn.jsdelivr.net`), once per pack, when you press Install on an [optional pack](#optional-packs).
   Nothing is requested from it otherwise.
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads.
@@ -200,6 +205,27 @@ pack in the same place to free the space. Packs are data only; the extension nev
 | Pack | Size | From | Used for |
 | --- | --- | --- | --- |
 | Japanese readings | 17 MB | jsDelivr (npm `@sglkc/kuromoji`, IPAdic) | Furigana over kanji |
+| Speech recognition (tiny) | 44 MB | Hugging Face (`onnx-community/whisper-tiny`) | Subtitles from sound |
+| Speech recognition (base) | 80 MB | Hugging Face (`onnx-community/whisper-base`) | Subtitles from sound, more accurate |
+
+## Subtitles from sound
+
+For videos with no subtitles at all. Install a speech pack in Settings → Optional packs, open the video,
+click Glossa's toolbar button, pick the language being spoken and press **Transcribe this video's audio**.
+Glossa asks once for permission to listen to tab audio. The video keeps playing as usual.
+
+- **On your device.** The tab's audio goes to Whisper running as WebAssembly on your CPU. Nothing is sent
+  anywhere, and the audio isn't saved. Only the lines of text are kept, for as long as the page is open.
+- **A few seconds behind.** Glossa cuts the audio at pauses and recognises each piece, so a line shows up
+  after it was spoken. Use the previous-line key (<kbd>A</kbd>) or rewind to read it. Rewatching a part
+  doesn't add its lines twice.
+- **Accuracy.** Small models make mistakes. Eight short Japanese sentences played through a tab: the base
+  model got three exactly right and tiny one or two; the rest sounded right but had the wrong kanji or
+  words. Expect more from clear speech without music. Whisper can also invent text for music or noise.
+- **Speed.** About 5× faster than real time with the base model and 9× with tiny on one desktop CPU
+  thread, so it keeps up with a video. On a slow computer it falls behind and skips what it can't process.
+- **Chrome and Edge only** for now. Firefox has no tab audio capture for extensions.
+- Pages with protected video (DRM) may give silence. That isn't verified here.
 
 ## Saved words and Anki
 
@@ -259,8 +285,8 @@ hidden while Glossa is on.
 ## Roadmap
 
 Open work is tracked in [GitHub Issues](https://github.com/amngy/glossa/issues): more sites,
-a web player, mobile, learning tools, local speech recognition for videos without subtitles, reading aids
-(furigana, pinyin) and better local models. Every feature keeps a local-first path; remote servers are
+a web player, mobile, learning tools, reading aids (pinyin, romaji), faster speech recognition (GPU,
+larger models) and better local models. Every feature keeps a local-first path; remote servers are
 opt-in. Glossa won't be published to the extension stores.
 
 Ideas and help are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).

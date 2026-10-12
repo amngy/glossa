@@ -1,3 +1,5 @@
+import type { AsrRequest } from './asr';
+
 /** Messages between the background worker and the offscreen document that runs the on-device model. */
 
 export interface OnDeviceStatus {
@@ -26,9 +28,12 @@ export interface ReadingsRequest {
   text: string;
 }
 
+/** Speech recognition also runs in the offscreen document (see lib/asr.ts). */
+export type OffscreenMessage = OffscreenRequest | ReadingsRequest | AsrRequest;
+
 export interface OffscreenEnvelope {
   glossaOffscreen: true;
-  request: OffscreenRequest | ReadingsRequest;
+  request: OffscreenMessage;
 }
 
 export type OffscreenReply = { ok: true; data: unknown } | { ok: false; error: string };

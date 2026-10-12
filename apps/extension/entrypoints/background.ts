@@ -1,5 +1,6 @@
 import { browser, defineBackground } from '#imports';
 import { LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
+import { isAsrEnvelope } from '@/lib/asr';
 import { handleMessages } from '@/lib/messages';
 import { askOffscreen } from '@/lib/on-device-client';
 import { createChatModel, createTranslator, describeNetworkError } from '@/lib/providers';
@@ -8,6 +9,8 @@ import { getSettings, updateSettings, watchSettings } from '@/lib/settings';
 import { syncVideoSites, watchVideoSites } from '@/lib/video-sites';
 
 export default defineBackground(() => {
+  /** The tab whose audio is being transcribed. Lost if the browser restarts this worker; the popup then offers Start again. */
+  let asrTab: number | null = null;
   const dictionary = new WiktionaryDictionary();
   // Best effort: the browser may stop this worker when idle, which clears the cache.
   const cache = new LruCache<string, Promise<unknown>>(1000);
@@ -103,5 +106,32 @@ export default defineBackground(() => {
     onDeviceDelete: ({ model }) => askOffscreen({ type: 'delete', model }),
 
     readings: ({ text }) => cached(`r|${text}`, () => askOffscreen({ type: 'readings', text })),
+
+    async asrStart({ tabId, streamId, language, pack }) {
+      await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack });
+      return null;
+    },
+    async asrStop() {
+      await askOffscreen({ type: 'asr-stop' });
+      return null;
+    },
+    asrStatus: async () => ({ tabId: asrTab }),
+  });
+
+  // The stream follows the tab to its next page, so stop listening when the tab leaves the video.
+  const stopIfListening = (tabId: number) => {
+    if (tabId === asrTab) void askOffscreen({ type: 'asr-stop' }).catch(() => {});
+  };
+  browser.tabs.onUpdated.addListener((tabId, change) => {
+    if (change.url) stopIfListening(tabId);
+  });
+  browser.tabs.onRemoved.addListener(stopIfListening);
+
+  // Recognised lines come from the offscreen document and belong to the tab that was listened to.
+  browser.runtime.onMessage.addListener((message: unknown, sender) => {
+    if (sender.id !== browser.runtime.id || !isAsrEnvelope(message)) return;
+    if (message.event.kind === 'loading') asrTab = message.tabId;
+    else if (message.event.kind === 'stopped' || message.event.kind === 'error') asrTab = null;
+    void browser.tabs.sendMessage(message.tabId, message).catch(() => {});
   });
 });

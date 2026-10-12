@@ -70,6 +70,8 @@ export interface OverlayState {
   active: boolean;
   status: 'idle' | 'loading' | 'ready' | 'no-subtitles' | 'error';
   error?: string;
+  /** Shown in the toolbar in place of the status, e.g. while speech is being recognised. */
+  notice?: string;
   /** Subtitle tracks the site offers for the current video. */
   tracks: TrackOption[];
   trackKey: string | null;

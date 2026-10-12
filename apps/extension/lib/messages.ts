@@ -1,5 +1,6 @@
 import { browser } from '#imports';
 import type { DictionaryEntry, ExplainRequest, ReadingToken, TranslationRequest } from '@glossa/core';
+import type { AsrStatus } from './asr';
 import type { OnDeviceStatus } from './on-device';
 
 /** Requests that pages and content scripts send to the background worker. */
@@ -21,6 +22,10 @@ export interface MessageMap {
   onDeviceDelete: { request: { model: string }; response: null };
   /** Readings for a Japanese line, from the installed "Japanese readings" pack. */
   readings: { request: { text: string }; response: ReadingToken[] };
+  /** Starts recognising the speech in a tab's audio. `streamId` comes from tabCapture.getMediaStreamId. */
+  asrStart: { request: { tabId: number; streamId: string; language: string; pack: string }; response: null };
+  asrStop: { request: null; response: null };
+  asrStatus: { request: null; response: AsrStatus };
 }
 
 export type MessageType = keyof MessageMap;

@@ -4,5 +4,9 @@ packages:
 
 # Dependency install scripts that pnpm may run. esbuild ships its binary as a
 # platform-specific optional dependency, so its postinstall check isn't needed.
+# onnxruntime-node (from transformers.js) downloads native binaries for Node; the extension only
+# uses onnxruntime-web.
 allowBuilds:
   esbuild: false
+  onnxruntime-node: false
+  protobufjs: false

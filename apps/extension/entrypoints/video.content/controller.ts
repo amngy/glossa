@@ -6,7 +6,7 @@ import {
   type Cue,
   type SubtitleTrack,
 } from '@glossa/core';
-import { fallbackLanguage, sampleText, SubtitleController } from '@/components/overlay/controller';
+import { fallbackLanguage, sampleText, SubtitleController, TRANSCRIPT_KEY } from '@/components/overlay/controller';
 import type { TrackOption, VideoBox } from '@/components/overlay/state';
 import { detectLanguage } from '@/lib/detect-language';
 
@@ -201,6 +201,7 @@ export class VideoController extends SubtitleController {
     this.translationTrackPending = false;
     this.fileTrack = null;
     this.fallbackTrack = null;
+    this.clearTranscript();
     this.setTrack(undefined, {
       active: !!video,
       status: video ? 'loading' : 'idle',
@@ -249,6 +250,8 @@ export class VideoController extends SubtitleController {
     this.textTracks = [...video.textTracks].filter((t) => isSubtitleTrack(t) && t !== this.fallbackTrack);
     const options: TrackOption[] = this.textTracks.map((t, i) => ({ key: this.keyFor(t), name: trackName(t, i) }));
     if (this.fileTrack) options.push({ key: FILE_KEY, name: this.fileTrack.label ?? 'Subtitle file' });
+    const transcript = this.transcriptOption();
+    if (transcript) options.push(transcript);
     this.store.set({ tracks: options });
 
     const { trackKey, settings } = this.store.get();
@@ -258,7 +261,7 @@ export class VideoController extends SubtitleController {
     }
     if (this.textTracks.length === 0) {
       this.primary = null;
-      if (!this.fileTrack) this.setTrack(undefined, { status: 'no-subtitles', trackKey: null, languageGuessed: false });
+      if (!this.fileTrack && !this.transcript) this.setTrack(undefined, { status: 'no-subtitles', trackKey: null, languageGuessed: false });
       return;
     }
     // The track the site shows, unless it's in the viewer's own language; then one in another language.
@@ -270,6 +273,11 @@ export class VideoController extends SubtitleController {
   }
 
   selectTrack(key: string): void {
+    if (key === TRANSCRIPT_KEY) {
+      this.primary = null;
+      this.showTranscript();
+      return;
+    }
     if (key === FILE_KEY) {
       this.useFile();
       return;
@@ -374,6 +382,12 @@ export class VideoController extends SubtitleController {
     this.fileTrack = track;
     this.useFile();
     this.refreshTracks();
+  }
+
+  protected override onTranscriptionStart(): void {
+    this.refreshTracks();
+    this.setNativeFallback(false);
+    this.primary = null;
   }
 
   private useFile(): void {
