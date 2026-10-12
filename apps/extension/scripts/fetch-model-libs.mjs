@@ -14,6 +14,7 @@ const BASE = `https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/${COM
 const FILES = {
   'Qwen3.5-2B-q4f16_1_cs1k-webgpu.wasm': 'b0f951d411e4fd59fe2af76be9328905ae30549e570a192a841c958b293ecd53',
   'Qwen3.5-4B-q4f16_1_cs1k-webgpu.wasm': '7e8f9895daa710a83952efac4d5c6f36e9f89dc684b25022746d881bdc904712',
+  'Qwen3.5-9B-q4f16_1_cs1k-webgpu.wasm': '3014c1d8958083edf621145596a6d7a832178aef2aefe48a0dbde16d38f7c857',
   // For GPUs without 16-bit shader support.
   'Qwen3.5-2B-q4f32_1_cs1k-webgpu.wasm': '0fc73363adf9b9c81f652421138b61bec238a1387b01c8fccffd9d3ea45be9dd',
 };
