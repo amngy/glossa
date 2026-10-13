@@ -134,13 +134,18 @@ export class ChromeSpeechSession {
   private onResult({ resultIndex, results }: ResultEvent): void {
     const now = Date.now();
     const lines: SpokenLine[] = [];
+    let partial = '';
     for (let i = resultIndex; i < results.length; i++) {
       const result = results[i]!;
       const start = this.began.get(i) ?? now;
       this.began.set(i, start);
       const text = result[0].transcript.trim();
-      if (result.isFinal && text) lines.push({ startWall: start, endWall: Math.max(now, start + 500), text });
+      if (result.isFinal) {
+        if (text) lines.push({ startWall: start, endWall: Math.max(now, start + 500), text });
+      } else partial = text;
     }
+    // Lines first: the overlay drops its live line on them, then starts a new one for the still-open result.
     if (lines.length > 0) this.emit({ kind: 'lines', lines });
+    if (partial) this.emit({ kind: 'partial', text: partial });
   }
 }
