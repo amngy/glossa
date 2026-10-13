@@ -28,6 +28,8 @@ export interface MessageMap {
    */
   asrStart: { request: { tabId: number; streamId?: string; language: string; pack: string }; response: null };
   asrStop: { request: null; response: null };
+  /** Starts the desktop companion if needed and returns its engine name. Needs the nativeMessaging permission. */
+  companionPing: { request: null; response: string };
   asrStatus: { request: null; response: AsrStatus };
 }
 
