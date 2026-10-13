@@ -1,6 +1,6 @@
 import { browser, defineBackground } from '#imports';
 import { COMPANION_HOST, decodePcm, LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
-import { CompanionSpeechModel } from '@/lib/companion';
+import { COMPANION_STREAM, CompanionSpeechModel, type CompanionStreamMessage } from '@/lib/companion';
 import { isAsrEnvelope } from '@/lib/asr';
 import { handleMessages } from '@/lib/messages';
 import { askOffscreen } from '@/lib/on-device-client';
@@ -111,14 +111,15 @@ export default defineBackground(() => {
 
     async asrStart({ tabId, streamId, language, pack }) {
       let notice: string | undefined;
-      // Look-ahead audio goes to the companion if it answers; otherwise to the Whisper pack.
-      if (!streamId && (await getSettings()).companion) {
+      // Audio goes to the companion if it answers (tab audio only if it has a live engine); otherwise to the pack.
+      if ((await getSettings()).companion) {
         try {
-          await companion.ping();
+          const { live } = await companion.ping();
+          if (streamId && !live) throw new Error('No live engine.');
           pack = COMPANION_HOST;
         } catch {
-          if (!pack) throw new Error('The desktop companion isn’t reachable and no speech pack is installed. See Settings → Optional packs.');
-          notice = 'Desktop companion not found, so the Whisper pack is used. Loading it…';
+          if (!pack) throw new Error('The desktop companion can’t take this audio and no speech pack is installed. See Settings → Optional packs.');
+          notice = 'The desktop companion can’t take this audio, so the speech pack is used. Loading it…';
         }
       }
       await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack, notice });
@@ -142,6 +143,18 @@ export default defineBackground(() => {
     if (change.url) stopIfListening(tabId);
   });
   browser.tabs.onRemoved.addListener(stopIfListening);
+
+  // Live tab audio from the offscreen document, which can't use native messaging: the first message
+  // names the language, the rest carry audio. Closing the port ends the stream.
+  browser.runtime.onConnect.addListener((port) => {
+    if (port.name !== COMPANION_STREAM || port.sender?.id !== browser.runtime.id) return;
+    let stream: ReturnType<CompanionSpeechModel['stream']> | null = null;
+    port.onMessage.addListener((message: CompanionStreamMessage) => {
+      if ('language' in message) stream ??= companion.stream(message.language, (reply) => port.postMessage(reply));
+      else stream?.push(message.pcm);
+    });
+    port.onDisconnect.addListener(() => stream?.stop());
+  });
 
   // Recognised lines come from the offscreen document and belong to the tab that was listened to.
   browser.runtime.onMessage.addListener((message: unknown, sender) => {

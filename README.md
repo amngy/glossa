@@ -157,17 +157,21 @@ plain HTTP, so don't expose these ports to the internet.
 ## Desktop companion (optional, Windows)
 
 A small program that recognises speech on your own graphics card, for features that turn audio into
-subtitles. For now it serves "transcribe ahead" on YouTube (see [Subtitles from sound](#subtitles-from-sound));
-live tab audio still uses the speech pack. It needs an NVIDIA GPU (about 4 GB of video memory for `large-v3`; without
-one it falls back to a small model on the CPU), [uv](https://docs.astral.sh/uv/) and Chrome, Edge or Brave.
+subtitles (see [Subtitles from sound](#subtitles-from-sound)): "transcribe ahead" on YouTube uses `large-v3`,
+and live tab audio on any site uses Nemotron 3.5 streaming, which shows each line word by word while it's
+spoken. It needs an NVIDIA GPU (about 4 GB of video memory for `large-v3` and 1 GB more for Nemotron once live
+mode is used; without one it falls back to the CPU), a recent NVIDIA driver (Nemotron's runtime is built for
+CUDA 13), [uv](https://docs.astral.sh/uv/) and Chrome, Edge or Brave.
 
 1. In `apps/companion`, run `powershell -ExecutionPolicy Bypass -File install-windows.ps1 -Download`.
    It registers the companion for your user (no admin rights) and, with `-Download`, fetches the Python
-   packages and CUDA libraries (about 1-2 GB, PyPI) and the `large-v3` model (about 3 GB, Hugging Face).
+   packages and CUDA libraries (about 1-2 GB, PyPI), the `large-v3` model (about 3 GB, Hugging Face),
+   NVIDIA's NeMo-Speech.cpp runtime (about 100 MB, GitHub) and the Nemotron 3.5 streaming model (about
+   740 MB, Hugging Face) into `apps/companion/nemotron`. Both Nemotron files are pinned and checked by SHA-256.
 2. Restart the browser and reload Glossa. The extension ID is fixed by the `key` in `wxt.config.ts`.
-3. In Settings → Optional packs, turn on **Use the desktop companion for transcribing ahead**. The
+3. In Settings → Optional packs, turn on **Use the desktop companion for speech recognition**. The
    browser asks for the "nativeMessaging" permission, and the switch shows whether the companion answers
-   and which model it runs (the first answer takes a few seconds while it loads the model).
+   and which models it runs (the first answer takes a few seconds while it loads the model).
 
 The companion only runs while the browser has it open, has no window, and reads audio only from Glossa
 over the browser's native messaging. After step 1 it never goes online.
@@ -211,8 +215,8 @@ browser:
 - **jsDelivr** (`cdn.jsdelivr.net`), once per pack, when you press Install on an [optional pack](#optional-packs).
   Nothing is requested from it otherwise.
 - **Desktop companion** (optional): the audio goes to a program on your computer, never over the
-  network. Only the one-time installs reach out: PyPI (Python packages, CUDA libraries) and Hugging Face
-  (model).
+  network. Only the one-time installs reach out: PyPI (Python packages, CUDA libraries), Hugging Face
+  (models) and GitHub (NVIDIA's NeMo-Speech.cpp release).
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads, and, with
   "transcribe ahead" on, the audio it already downloaded. Neither is a new request.
 
@@ -265,6 +269,11 @@ Glossa asks once for permission to listen to tab audio. The video keeps playing 
   (possible in branded Chrome or Edge), no lines appear. With the [desktop companion](#desktop-companion-optional-windows)
   turned on, this audio is recognised by `large-v3` on your GPU instead, which is more accurate, and no
   speech pack is needed. If the companion doesn't answer, Glossa says so and uses the speech pack.
+- **Live with the desktop companion.** With the companion on, tab audio streams to Nemotron 3.5 on your
+  GPU: words show up grey about a second after they're spoken and settle about half a second after the
+  sentence ends (eight Japanese sentences played through a tab: five to seven exactly right). Lines land on
+  the video's timeline up to a second late. If the companion doesn't answer or has no Nemotron, Glossa says
+  so and uses the speech pack.
 - **Chrome and Edge only** for now. Firefox has no tab audio capture for extensions.
 - Pages with protected video (DRM) may give silence. That isn't verified here.
 

@@ -256,7 +256,8 @@ export abstract class SubtitleController {
         break;
       }
       case 'partial':
-        this.onPartialText(event.text);
+        if (event.text) this.onPartialText(event.text);
+        else this.endLiveLine();
         break;
       case 'error':
         this.transcribing = false;

@@ -9,6 +9,10 @@ import {
   type SpeechOptions,
 } from '@glossa/core';
 
+/** Name of the port that carries live audio from the offscreen document to the background worker. */
+export const COMPANION_STREAM = 'glossa-companion-stream';
+export type CompanionStreamMessage = { language: string } | { pcm: string };
+
 type WithoutId<T> = T extends unknown ? Omit<T, 'id'> : never;
 type Waiting = { resolve: (reply: CompanionReply) => void; reject: (error: Error) => void };
 
@@ -20,6 +24,8 @@ export class CompanionSpeechModel implements SpeechModel {
   readonly name = 'Desktop companion';
   private port: ReturnType<typeof browser.runtime.connectNative> | null = null;
   private waiting = new Map<number, Waiting>();
+  /** Open live streams, by the id of their stream-start. */
+  private streams = new Map<number, (reply: CompanionReply) => void>();
   private nextId = 1;
 
   private connect() {
@@ -29,6 +35,7 @@ export class CompanionSpeechModel implements SpeechModel {
     port.onMessage.addListener((message: unknown) => {
       const reply = parseCompanionReply(message);
       if (reply && 'id' in reply) {
+        this.streams.get(reply.id)?.(reply);
         this.waiting.get(reply.id)?.resolve(reply);
         this.waiting.delete(reply.id);
       }
@@ -40,6 +47,8 @@ export class CompanionSpeechModel implements SpeechModel {
       );
       for (const w of this.waiting.values()) w.reject(error);
       this.waiting.clear();
+      for (const [id, onReply] of this.streams) onReply({ id, type: 'error', message: error.message });
+      this.streams.clear();
       this.port = null;
     });
     return (this.port = port);
@@ -62,12 +71,32 @@ export class CompanionSpeechModel implements SpeechModel {
     });
   }
 
-  /** Resolves with the engine's name once the companion answers (it loads its model first, a few seconds). */
-  async ping(): Promise<string> {
+  /** Resolves with the engines' names once the companion answers (it loads its model first, a few seconds). */
+  async ping(): Promise<{ engine: string; live?: string }> {
     // A companion stuck loading would otherwise stall look-ahead's start forever; 30 s covers a cold CPU load.
     const reply = await this.request({ type: 'ping' }, AbortSignal.timeout(30_000));
     if (reply.type !== 'pong') throw new Error('Unexpected reply from the companion.');
-    return reply.engine;
+    return { engine: reply.engine, live: reply.live };
+  }
+
+  /** Opens a live stream. `onReply` gets its partial, final and error replies until `stop`. */
+  stream(language: string, onReply: (reply: CompanionReply) => void) {
+    const id = this.nextId++;
+    const post = (body: WithoutId<CompanionRequest>) => {
+      try {
+        this.connect().postMessage({ ...body, id });
+      } catch (error) {
+        onReply({ id, type: 'error', message: error instanceof Error ? error.message : String(error) });
+      }
+    };
+    this.streams.set(id, onReply);
+    post({ type: 'stream-start', language });
+    return {
+      push: (pcm: string) => post({ type: 'stream-audio', pcm }),
+      stop: () => {
+        if (this.streams.delete(id)) post({ type: 'stream-stop' });
+      },
+    };
   }
 
   async transcribe(pcm: Float32Array, options: SpeechOptions = {}) {

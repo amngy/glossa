@@ -1,6 +1,7 @@
 # Registers the Glossa companion with Chrome, Edge and Brave for the current user (HKCU, no admin needed).
 # Run once from this folder:  powershell -ExecutionPolicy Bypass -File install-windows.ps1
-# Add -Download to also fetch the speech model now (about 3 GB from Hugging Face) and the Python packages.
+# Add -Download to also fetch the speech models now (about 3 GB from Hugging Face), the Python packages, and
+# for live mode NVIDIA's NeMo-Speech.cpp runtime (about 100 MB from GitHub) with Nemotron 3.5 (about 740 MB).
 param([switch]$Download)
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
@@ -27,5 +28,26 @@ foreach ($key in 'Google\Chrome', 'Microsoft\Edge', 'BraveSoftware\Brave-Browser
   Set-ItemProperty -Path $path -Name '(default)' -Value "$here\com.glossa.companion.json"
 }
 
-if ($Download) { & $uv run --script "$here\glossa_companion.py" --download }
+if ($Download) {
+  & $uv run --script "$here\glossa_companion.py" --download
+  # Pinned versions, checked against their published SHA-256 (the release's .sha256 file, Hugging Face's LFS hash).
+  $nemotron = "$here\nemotron"
+  $runtime = 'nemo-speech-0.2.0-windows-x86_64-cuda'
+  $files = @(
+    @{ url = "https://github.com/NVIDIA/NeMo-Speech.cpp/releases/download/v0.2.0/$runtime.zip"; sha256 = '9ffe5e842c39a7d3211f3b2c3b3aa1bca8c0b2455d96d961ed5f22ec5108f98d'; done = "$nemotron\$runtime\bin\nemo_speech_asr_c.dll" },
+    @{ url = 'https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/ea30d66debe3740a08b573244286791d423d6b3e/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf'; sha256 = '3fc991d3badad7277c11030a7519832cddaf2057aafed6d4b25147e953a070b1' }
+  )
+  New-Item -ItemType Directory -Force $nemotron | Out-Null
+  $ProgressPreference = 'SilentlyContinue'  # the progress bar makes Invoke-WebRequest many times slower
+  foreach ($file in $files) {
+    $out = "$nemotron\$(Split-Path $file.url -Leaf)"
+    if (Test-Path $(if ($file.done) { $file.done } else { $out })) { continue }
+    Write-Host "Downloading $($file.url)"
+    # Under another name until checked, so an interrupted download is never taken as done.
+    Invoke-WebRequest $file.url -OutFile "$out.part"
+    if ((Get-FileHash "$out.part" -Algorithm SHA256).Hash -ne $file.sha256) { Remove-Item "$out.part"; throw "Checksum mismatch: $($file.url)" }
+    Move-Item "$out.part" $out -Force
+    if ($file.done) { Expand-Archive $out $nemotron -Force; Remove-Item $out }
+  }
+}
 Write-Host 'Registered. Restart the browser, then load Glossa.'

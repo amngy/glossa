@@ -9,7 +9,7 @@ import type { Cue, SpokenLine } from '@glossa/core';
 export type AsrRequest =
   /**
    * Without `streamId`, the audio comes from the page as `AheadAudio` (look-ahead on YouTube, #44).
-   * `pack` is a Whisper pack id, CHROME_SPEECH, or COMPANION_HOST for the desktop companion (look-ahead only).
+   * `pack` is a Whisper pack id, CHROME_SPEECH, or COMPANION_HOST for the desktop companion.
    * `notice` replaces the usual loading message.
    */
   | { type: 'asr-start'; tabId: number; streamId?: string; language: string; pack: string; notice?: string }
@@ -26,7 +26,7 @@ export type AsrEvent =
   | { kind: 'lines'; lines: SpokenLine[] }
   /** Lines already on the video's timeline, from audio read ahead of the playhead. */
   | { kind: 'cues'; cues: Cue[] }
-  /** The current best guess for the line being spoken; it may change with the next update. */
+  /** The current best guess for the line being spoken; it may change with the next update. Empty: the line ended without a final. */
   | { kind: 'partial'; text: string }
   | { kind: 'error'; message: string }
   | { kind: 'stopped' };
