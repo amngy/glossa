@@ -1,4 +1,4 @@
-import type { DictionaryEntry, SubtitleTrack } from '@glossa/core';
+import type { Cue, DictionaryEntry, SubtitleTrack } from '@glossa/core';
 import type { Settings } from '@/lib/settings';
 
 export type Async<T> =
@@ -84,6 +84,11 @@ export interface OverlayState {
   canLoadFile: boolean;
   /** Unset when the overlay fills its host (YouTube's player). */
   box?: VideoBox;
+  /**
+   * A line still being recognised, shown in place of `displayIndex`'s cue. Only the first `settledLength`
+   * characters are final (clickable); the rest is provisional. Its translation lives at `LIVE_INDEX`.
+   */
+  live?: { cue: Cue; settledLength: number };
   /** Index into `track.cues` of the line on screen, or -1. */
   displayIndex: number;
   lineTranslations: ReadonlyMap<number, LineTranslation>;
