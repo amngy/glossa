@@ -22,8 +22,11 @@ export interface MessageMap {
   onDeviceDelete: { request: { model: string }; response: null };
   /** Readings for a Japanese line, from the installed "Japanese readings" pack. */
   readings: { request: { text: string }; response: ReadingToken[] };
-  /** Starts recognising the speech in a tab's audio. `streamId` comes from tabCapture.getMediaStreamId. */
-  asrStart: { request: { tabId: number; streamId: string; language: string; pack: string }; response: null };
+  /**
+   * Starts recognising the speech in a tab's audio. `streamId` comes from tabCapture.getMediaStreamId;
+   * without it, the YouTube page sends the audio its player has buffered (look-ahead).
+   */
+  asrStart: { request: { tabId: number; streamId?: string; language: string; pack: string }; response: null };
   asrStop: { request: null; response: null };
   /** Starts the desktop companion if needed and returns its engine name. Needs the nativeMessaging permission. */
   companionPing: { request: null; response: string };

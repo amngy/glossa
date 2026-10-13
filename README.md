@@ -201,12 +201,18 @@ browser:
   word when you press "Look up with AI". The two on-device options send nothing.
 - **Hugging Face**, once, if you download Glossa's on-device model, and once per speech pack you install.
   Hugging Face sees the download only; the audio never leaves your device.
+- **Google**, once per language, if you turn on Chrome's built-in speech recognition in Settings and press the
+  download button: a speech pack of about 60 MB. Google sees the download only. Recognition then runs on your
+  device, and Glossa never uses Chrome's cloud recognizer: if the pack is missing or the browser can't keep
+  recognition on the device, it stops instead. Only Google Chrome gets these packs: Brave, Chromium and Chrome for
+  Testing offer the download but never finish it, so Glossa gives up after five minutes.
 - **jsDelivr** (`cdn.jsdelivr.net`), once per pack, when you press Install on an [optional pack](#optional-packs).
   Nothing is requested from it otherwise.
 - **Desktop companion** (optional): the audio goes to a program on your computer, never over the
   network. Only the one-time installs reach out: PyPI (Python packages, CUDA libraries) and Hugging Face
   (model).
-- **YouTube**: Glossa reads the caption files the YouTube player already downloads.
+- **YouTube**: Glossa reads the caption files the YouTube player already downloads, and, with
+  "transcribe ahead" on, the audio it already downloaded. Neither is a new request.
 
 On other sites Glossa only reads the subtitle tracks the page already loaded, or the file you pick. It
 sends nothing to those sites.
@@ -244,6 +250,12 @@ Glossa asks once for permission to listen to tab audio. The video keeps playing 
   words. Expect more from clear speech without music. Whisper can also invent text for music or noise.
 - **Speed.** About 5× faster than real time with the base model and 9× with tiny on one desktop CPU
   thread, so it keeps up with a video. On a slow computer it falls behind and skips what it can't process.
+- **Ahead of time on YouTube (experimental).** Turn on "transcribe ahead" in Settings → Optional packs.
+  Glossa then reads the audio YouTube's player has already downloaded, usually seconds to half a minute
+  before it plays, so lines can be ready before they're spoken. No tab capture and no extra download:
+  Glossa reads bytes the player already has. It switches YouTube's AI-dubbed audio back to the original
+  track and skips ads. It reads Opus audio only for now; if your browser gets AAC audio from YouTube
+  (possible in branded Chrome or Edge), no lines appear.
 - **Chrome and Edge only** for now. Firefox has no tab audio capture for extensions.
 - Pages with protected video (DRM) may give silence. That isn't verified here.
 
