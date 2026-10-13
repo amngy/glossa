@@ -1,5 +1,5 @@
 .options {
-  max-width: 760px;
+  max-width: 940px;
   margin: 0 auto;
   padding: 32px 20px 96px;
 }
@@ -13,13 +13,73 @@
   margin: 0;
 }
 
+.layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.nav {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 2px;
+}
+
+.nav a {
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav a:hover,
+.nav a[aria-current] {
+  background: var(--surface);
+}
+
+.nav a[aria-current] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pages {
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .nav {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .nav a {
+    white-space: nowrap;
+  }
+}
+
 .section {
   display: grid;
   gap: 12px;
-  margin-top: 28px;
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 14px;
+}
+
+.pack {
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
 .section h2 {
@@ -102,8 +162,25 @@
 }
 
 .shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 16px;
   margin: 0;
-  line-height: 2;
+}
+
+.shortcuts div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shortcuts dt,
+.shortcuts dd {
+  margin: 0;
+}
+
+.shortcuts dt {
+  min-width: 36px;
 }
 
 code {
