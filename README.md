@@ -46,8 +46,9 @@ talks to. You can also run every one of those services yourself.
   readings" pack, which you install from Settings; see [Optional packs](#optional-packs). Chrome and Edge only
   for now.
 - **Subtitles from sound (optional).** For a video with no subtitles at all, Glossa can listen to the tab's
-  audio and write them with Whisper, on your device. Lines show up a few seconds after they're spoken, so
-  rewind to read one. It needs a speech pack from Settings and works in Chrome and Edge; see
+  audio and write them on your device, with a Whisper speech pack or Chrome's built-in recognition. Lines
+  show up a few seconds after they're spoken, so rewind to read one. On YouTube, an experimental mode
+  transcribes ahead from the audio the player has already loaded. Chrome and Edge; see
   [Subtitles from sound](#subtitles-from-sound).
 - **Zero setup by default.** It works out of the box with YouTube's own translations, Chrome's on-device
   translator and Wiktionary. Add DeepL, LibreTranslate or an AI model only if you want them.
@@ -243,6 +244,11 @@ Glossa asks once for permission to listen to tab audio. The video keeps playing 
 
 - **On your device.** The tab's audio goes to Whisper running as WebAssembly on your CPU. Nothing is sent
   anywhere, and the audio isn't saved. Only the lines of text are kept, for as long as the page is open.
+- **Or Chrome's built-in recognition (Google Chrome only).** Instead of a Whisper pack, turn on "Use
+  Chrome's built-in speech recognition" in Settings → Optional packs and download its language pack (about
+  60 MB, from Google, once per language). It runs on your device, the engine behind Chrome's Live Caption;
+  Glossa never uses Chrome's cloud recognizer. Brave and Chromium offer the download but never finish it.
+  No Arabic.
 - **A few seconds behind.** Glossa cuts the audio at pauses and recognises each piece, so a line shows up
   after it was spoken. Use the previous-line key (<kbd>A</kbd>) or rewind to read it. Rewatching a part
   doesn't add its lines twice.
@@ -296,7 +302,9 @@ packages/core        Platform-independent logic, no browser APIs
   src/subtitles      Parsing YouTube json3, WebVTT and SRT; finding the active cue
   src/text           Word segmentation (Intl.Segmenter), language names, guessing a file's language from its name
   src/providers      Translators, Wiktionary, AI models (Claude, OpenAI-compatible, the browser's built-in model), prompts
+  src/asr            Speech: cutting audio at pauses, WebM demuxing, live lines, the companion protocol
   src/vocab.ts       CSV and Anki export
+apps/companion       Desktop companion: GPU speech recognition over native messaging (Python, Windows installer)
 apps/extension       Browser extension (WXT + Preact, Manifest V3)
   entrypoints/youtube-hook.content.ts   Runs in YouTube's page; sees caption requests, drives the player API
   entrypoints/youtube.content/          YouTube's controller: loads captions, sizes the overlay to the player
@@ -321,7 +329,7 @@ hidden while Glossa is on.
 
 Open work is tracked in [GitHub Issues](https://github.com/amngy/glossa/issues): more sites,
 a web player, mobile, learning tools, reading aids (pinyin, romaji), faster speech recognition (GPU,
-larger models) and better local models. Every feature keeps a local-first path; remote servers are
+larger models; the plan is [#43](https://github.com/amngy/glossa/issues/43)) and better local models. Every feature keeps a local-first path; remote servers are
 opt-in. Glossa won't be published to the extension stores.
 
 Ideas and help are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
