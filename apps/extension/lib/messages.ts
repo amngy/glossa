@@ -28,8 +28,8 @@ export interface MessageMap {
    */
   asrStart: { request: { tabId: number; streamId?: string; language: string; pack: string }; response: null };
   asrStop: { request: null; response: null };
-  /** Starts the desktop companion if needed and returns its engine name. Needs the nativeMessaging permission. */
-  companionPing: { request: null; response: string };
+  /** Starts the desktop companion if needed and returns its engines' names. Needs the nativeMessaging permission. */
+  companionPing: { request: null; response: { engine: string; live?: string } };
   /** From the offscreen document: one utterance for the companion, `pcm` as from `encodePcm`. */
   companionTranscribe: { request: { pcm: string; language: string }; response: { language: string; segments: SpeechSegment[] } };
   asrStatus: { request: null; response: AsrStatus };

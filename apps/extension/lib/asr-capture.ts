@@ -1,6 +1,7 @@
-import { browser } from '#imports';
-import { COMPANION_HOST, encodePcm, Endpointer, mixToMono, segmentsToCues, type SpokenLine } from '@glossa/core';
+import { browser, type Browser } from '#imports';
+import { COMPANION_HOST, encodePcm, Endpointer, mixToMono, segmentsToCues, type CompanionReply, type SpokenLine } from '@glossa/core';
 import { fromBase64, type AheadAudio, type AsrEvent, type AsrWorkerReply, type AsrWorkerRequest } from './asr';
+import { COMPANION_STREAM, type CompanionStreamMessage } from './companion';
 import { sendMessage } from './messages';
 
 /** Whisper's input rate. */
@@ -33,6 +34,7 @@ interface AheadStream {
  * Without a stream, the page sends the audio instead (`feed`): frames YouTube's player has buffered
  * ahead of the playhead, decoded here, so lines carry media times and can be ready before they're spoken.
  * Those can go to the desktop companion instead of Whisper; the background worker holds its connection.
+ * Captured audio can go to the companion too, as one live stream that it cuts into lines itself.
  */
 export class AsrSession {
   private worker: Worker | null = null;
@@ -52,6 +54,7 @@ export class AsrSession {
   private language = '';
   private fromPage = false;
   private companion = false;
+  private live: Browser.runtime.Port | null = null;
   private readonly ahead = new Map<number, AheadStream>();
 
   constructor(
@@ -64,8 +67,9 @@ export class AsrSession {
     this.language = language;
     this.fromPage = !streamId;
     this.emit({ kind: 'loading', message: notice ?? 'Loading the speech model…' });
+    if (pack === COMPANION_HOST && streamId) this.openLive();
     if (streamId) await this.capture(streamId);
-    if (pack === COMPANION_HOST && this.fromPage) {
+    if (pack === COMPANION_HOST) {
       // The background worker already reached the companion, so its model is loaded.
       this.companion = true;
       this.onReply({ type: 'ready' });
@@ -77,6 +81,25 @@ export class AsrSession {
     worker.onmessage = (event: MessageEvent<AsrWorkerReply>) => this.onReply(event.data);
     worker.onerror = (event) => this.fail(`Speech recognition stopped: ${event.message}`);
     worker.postMessage({ type: 'load', pack } satisfies AsrWorkerRequest);
+  }
+
+  /** Live mode: the companion answers the streamed audio with partial and settled lines, timed from its first sample. */
+  private openLive(): void {
+    const port = browser.runtime.connect({ name: COMPANION_STREAM });
+    this.live = port;
+    port.onMessage.addListener((reply: CompanionReply) => {
+      if (this.stopped) return;
+      if (reply.type === 'partial') this.emit({ kind: 'partial', text: reply.text });
+      else if (reply.type === 'error') this.fail(reply.message);
+      else if (reply.type === 'final') {
+        const line = { startWall: this.wallOf(reply.start * SAMPLE_RATE), endWall: this.wallOf(reply.end * SAMPLE_RATE), text: reply.text };
+        this.emit({ kind: 'lines', lines: [line] });
+      }
+    });
+    port.onDisconnect.addListener(() => {
+      if (!this.stopped) this.fail('The desktop companion stopped.');
+    });
+    port.postMessage({ language: this.language } satisfies CompanionStreamMessage);
   }
 
   private async capture(streamId: string): Promise<void> {
@@ -102,6 +125,7 @@ export class AsrSession {
     capture.port.onmessage = (event: MessageEvent<{ samples: Float32Array; time: number }>) => {
       if (this.stopped) return;
       if (this.firstBlockTime === null) this.firstBlockTime = event.data.time;
+      if (this.live) return this.live.postMessage({ pcm: encodePcm(event.data.samples) } satisfies CompanionStreamMessage);
       for (const utterance of this.endpointer.push(event.data.samples)) {
         this.enqueue({ samples: utterance.samples, startWall: this.wallOf(utterance.start) });
       }
@@ -160,6 +184,7 @@ export class AsrSession {
     if (this.stopped) return;
     this.stopped = true;
     this.worker?.terminate();
+    this.live?.disconnect();
     for (const { decoder } of this.ahead.values()) if (decoder.state !== 'closed') decoder.close();
     this.streams?.getTracks().forEach((track) => track.stop());
     for (const context of this.contexts) void context.close();
