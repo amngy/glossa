@@ -17,7 +17,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { OPENAI_PRESETS } from '@/lib/ai-presets';
 import { languageOptions } from '@/lib/languages';
 import { BuiltInModelSetup, OnDeviceModelSetup } from './ai-models';
-import { OptionalPacks, usePackInstalled } from './packs';
+import { ChromeSpeechSetup, OptionalPacks, usePackInstalled } from './packs';
 import { JAPANESE_READINGS } from '@/lib/packs';
 import { sendMessage } from '@/lib/messages';
 import { requestOrigins, requiredOrigins } from '@/lib/permissions';
@@ -650,6 +650,9 @@ function Options() {
         intro="Extra data that isn’t part of Glossa. Nothing is downloaded until you press Install, and it works offline afterwards."
       >
         <OptionalPacks />
+        {browser.offscreen && (
+          <ChromeSpeechSetup enabled={settings.chromeSpeech} language={settings.spokenLanguage} onToggle={(on) => change({ chromeSpeech: on })} />
+        )}
       </Section>
 
       <VideoSites />

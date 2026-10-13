@@ -21,6 +21,8 @@ export interface Settings {
   nativeLanguage: string;
   /** The language spoken in videos Glossa transcribes; empty until the viewer picks one. */
   spokenLanguage: string;
+  /** Recognise speech with Chrome's on-device engine instead of a Whisper pack. Off until the viewer opts in. */
+  chromeSpeech: boolean;
   translator: TranslatorChoice;
   libreTranslateUrl: string;
   ai: {
@@ -64,6 +66,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
   nativeLanguage: defaultNativeLanguage(),
   spokenLanguage: '',
+  chromeSpeech: false,
   translator: 'browser',
   libreTranslateUrl: 'http://localhost:5000',
   ai: { provider: 'none', model: '', baseUrl: 'http://localhost:11434/v1', onDeviceModel: DEFAULT_ON_DEVICE_MODEL },
