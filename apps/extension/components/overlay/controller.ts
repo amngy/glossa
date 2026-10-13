@@ -83,7 +83,7 @@ export abstract class SubtitleController {
   private readonly browserTranslator = new BrowserTranslator();
   /** Lines recognised from the video's audio so far; the track is `transcript`. */
   protected transcript: SubtitleTrack | null = null;
-  private transcribing = false;
+  protected transcribing = false;
   private liveLine: LiveLine | null = null;
   /** The settled text last sent to the translator, so each growth of it is translated once. */
   private liveTranslated = '';
@@ -242,10 +242,11 @@ export abstract class SubtitleController {
         this.store.set({ notice: 'Listening. Lines show up a few seconds after they’re spoken.' });
         break;
       }
-      case 'lines': {
+      case 'lines':
+      case 'cues': {
         if (!this.transcript) break;
         this.endLiveLine();
-        const added = placeSpokenLines(event.lines, this.clock);
+        const added = event.kind === 'cues' ? event.cues : placeSpokenLines(event.lines, this.clock);
         const cues = addTranscribedCues(this.transcript.cues, added);
         this.transcript = { ...this.transcript, cues };
         if (this.store.get().trackKey === TRANSCRIPT_KEY) {

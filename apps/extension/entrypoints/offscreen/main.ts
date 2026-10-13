@@ -1,7 +1,7 @@
 import { browser } from '#imports';
 import { japaneseReadings } from '@/lib/japanese-readings';
 import { isOffscreenEnvelope, type OffscreenReply, type WorkerReply, type WorkerRequest } from '@/lib/on-device';
-import type { AsrEnvelope, AsrEvent } from '@/lib/asr';
+import { isAheadAudio, type AsrEnvelope, type AsrEvent } from '@/lib/asr';
 import { AsrSession } from '@/lib/asr-capture';
 import { CHROME_SPEECH, ChromeSpeechSession } from '@/lib/chrome-speech';
 
@@ -31,22 +31,29 @@ function tellTab(tabId: number, event: AsrEvent): void {
   void browser.runtime.sendMessage({ glossaAsr: true, tabId, event } satisfies AsrEnvelope).catch(() => {});
 }
 
-function startAsr(tabId: number, streamId: string, language: string, pack: string): Promise<void> {
+function startAsr(tabId: number, streamId: string | undefined, language: string, pack: string): Promise<void> {
   asr?.stop();
   const emit = (event: AsrEvent) => tellTab(tabId, event);
   const onEnd = () => {
     if (asr === session) asr = null;
   };
-  const session = pack === CHROME_SPEECH ? new ChromeSpeechSession(tabId, emit, onEnd) : new AsrSession(tabId, emit, onEnd);
+  // Look-ahead (no stream id) feeds decoded audio, which only the Whisper session takes.
+  const session = pack === CHROME_SPEECH && streamId ? new ChromeSpeechSession(tabId, emit, onEnd) : new AsrSession(tabId, emit, onEnd);
   asr = session;
-  return (session instanceof ChromeSpeechSession ? session.start(streamId, language) : session.start(streamId, language, pack)).catch((error: unknown) => {
+  return (session instanceof ChromeSpeechSession ? session.start(streamId!, language) : session.start(streamId, language, pack)).catch((error: unknown) => {
     tellTab(tabId, { kind: 'error', message: error instanceof Error ? error.message : String(error) });
     session.stop();
   });
 }
 
 browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
-  if (sender.id !== browser.runtime.id || !isOffscreenEnvelope(message)) return;
+  if (sender.id !== browser.runtime.id) return;
+  // Look-ahead audio comes straight from the YouTube tab's content script, in order; only that tab's is used.
+  if (isAheadAudio(message)) {
+    if (asr instanceof AsrSession && asr.tabId === sender.tab?.id) asr.feed(message);
+    return;
+  }
+  if (!isOffscreenEnvelope(message)) return;
   const { request } = message;
   if (request.type === 'readings') {
     japaneseReadings(request.text).then(
