@@ -106,6 +106,7 @@ export class ChromeSpeechSession {
     recognition.addEventListener('end', () => {
       if (this.stopped) return;
       this.began.clear();
+      this.emit({ kind: 'partial', text: '' }); // an interim result that never became final would stay grey
       try {
         startLocalOnly(recognition, track);
       } catch (error) {

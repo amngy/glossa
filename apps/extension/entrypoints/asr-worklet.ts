@@ -7,7 +7,8 @@ import { defineUnlistedScript } from '#imports';
 export default defineUnlistedScript({
   exclude: ['firefox'],
   main() {
-    const BLOCK = 4096;
+    // 80 ms: live engines update the line once per block (4096 samples made it 256 ms).
+    const BLOCK = 1280;
     const scope = globalThis as unknown as {
       currentTime: number;
       AudioWorkletProcessor: new () => { port: MessagePort };

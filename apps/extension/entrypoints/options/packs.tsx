@@ -141,7 +141,7 @@ export function CompanionSetup({ enabled, onToggle }: { enabled: boolean; onTogg
     setStatus({ ok: true, text: 'Connecting…' });
     // The first answer waits for the companion to load its model, a few seconds.
     sendMessage('companionPing', null).then(
-      (engine) => setStatus({ ok: true, text: `Connected: ${engine}.` }),
+      ({ engine, live }) => setStatus({ ok: true, text: `Connected: ${engine}${live ? `, live: ${live}` : ''}.` }),
       () => setStatus({ ok: false, text: 'Not found.' }),
     );
   }, [enabled]);
@@ -156,11 +156,11 @@ export function CompanionSetup({ enabled, onToggle }: { enabled: boolean; onTogg
     <div class="pack">
       <label class="switch">
         <input type="checkbox" checked={enabled} onChange={(event) => toggle(event.currentTarget.checked)} />
-        <span>Use the desktop companion for transcribing ahead</span>
+        <span>Use the desktop companion for speech recognition</span>
       </label>
       <span class="muted small block">
         Recognises speech on your own graphics card with a program you install. The audio goes to that program over the browser, never
-        over the network. If it can’t be reached, the Whisper pack is used.
+        over the network. If it can’t be reached, the speech pack is used.
       </span>
       {enabled && status && (
         <p class={status.ok ? 'ok' : 'error'}>

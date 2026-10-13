@@ -23,3 +23,6 @@ eval-results-*.json
 
 # Copied from onnxruntime-web at build time by apps/extension/scripts/fetch-model-libs.mjs
 apps/extension/public/ort/
+
+# Downloaded by apps/companion/install-windows.ps1 -Download
+apps/companion/nemotron/
