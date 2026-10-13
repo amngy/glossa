@@ -32,6 +32,10 @@ export function encodePcm(pcm: Float32Array): string {
   return btoa(binary);
 }
 
+export function decodePcm(base64: string): Float32Array {
+  return new Float32Array(Uint8Array.from(atob(base64), (char) => char.charCodeAt(0)).buffer);
+}
+
 /** Checks what came from the companion, which is outside our code, and returns null for anything unexpected. */
 export function parseCompanionReply(value: unknown): CompanionReply | null {
   if (typeof value !== 'object' || value === null) return null;

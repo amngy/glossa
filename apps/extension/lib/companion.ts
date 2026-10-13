@@ -64,7 +64,8 @@ export class CompanionSpeechModel implements SpeechModel {
 
   /** Resolves with the engine's name once the companion answers (it loads its model first, a few seconds). */
   async ping(): Promise<string> {
-    const reply = await this.request({ type: 'ping' });
+    // A companion stuck loading would otherwise stall look-ahead's start forever; 30 s covers a cold CPU load.
+    const reply = await this.request({ type: 'ping' }, AbortSignal.timeout(30_000));
     if (reply.type !== 'pong') throw new Error('Unexpected reply from the companion.');
     return reply.engine;
   }

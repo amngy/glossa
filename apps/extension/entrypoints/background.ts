@@ -1,5 +1,5 @@
 import { browser, defineBackground } from '#imports';
-import { LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
+import { COMPANION_HOST, decodePcm, LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
 import { CompanionSpeechModel } from '@/lib/companion';
 import { isAsrEnvelope } from '@/lib/asr';
 import { handleMessages } from '@/lib/messages';
@@ -110,7 +110,18 @@ export default defineBackground(() => {
     readings: ({ text }) => cached(`r|${text}`, () => askOffscreen({ type: 'readings', text })),
 
     async asrStart({ tabId, streamId, language, pack }) {
-      await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack });
+      let notice: string | undefined;
+      // Look-ahead audio goes to the companion if it answers; otherwise to the Whisper pack.
+      if (!streamId && (await getSettings()).companion) {
+        try {
+          await companion.ping();
+          pack = COMPANION_HOST;
+        } catch {
+          if (!pack) throw new Error('The desktop companion isn’t reachable and no speech pack is installed. See Settings → Optional packs.');
+          notice = 'Desktop companion not found, so the Whisper pack is used. Loading it…';
+        }
+      }
+      await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack, notice });
       return null;
     },
     async asrStop() {
@@ -118,6 +129,8 @@ export default defineBackground(() => {
       return null;
     },
     companionPing: () => companion.ping(),
+    // Native messaging is only open to extension pages and this worker, not the offscreen document.
+    companionTranscribe: ({ pcm, language }) => companion.transcribe(decodePcm(pcm), { language }),
     asrStatus: async () => ({ tabId: asrTab }),
   });
 

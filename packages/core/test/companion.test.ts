@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { encodePcm, parseCompanionReply } from '../src';
+import { decodePcm, encodePcm, parseCompanionReply } from '../src';
 
 describe('encodePcm', () => {
   it('round-trips samples as little-endian f32', () => {
     const pcm = Float32Array.from({ length: 70000 }, (_, i) => Math.sin(i)); // longer than one chunk
     const bytes = Uint8Array.from(Buffer.from(encodePcm(pcm), 'base64'));
     expect(new Float32Array(bytes.buffer)).toEqual(pcm);
+    expect(decodePcm(encodePcm(pcm))).toEqual(pcm);
   });
 });
 

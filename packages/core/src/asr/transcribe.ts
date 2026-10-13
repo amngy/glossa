@@ -159,6 +159,20 @@ export function placeSpokenLines(lines: readonly SpokenLine[], clock: MediaClock
   return cues;
 }
 
+/** Whisper makes up lines for noise and music. These are the usual ones. */
+const NOT_SPEECH = /^[\s♪♫♬~…・.,、。!?！？\-–—'"“”()（）\[\]【】]*$/;
+
+/**
+ * Places a speech engine's segments, timed from the start of the audio it was given, at `offset` seconds.
+ * Empty and noise-only segments are dropped. A missing end (Whisper's last chunk) becomes start + 2 s;
+ * the next line caps it anyway.
+ */
+export function segmentsToCues(segments: readonly { start: number; end: number | null; text: string }[], offset: number): Cue[] {
+  return segments
+    .map((s) => ({ start: offset + s.start, end: offset + (s.end ?? s.start + 2), text: s.text.trim() }))
+    .filter((cue) => cue.text && !NOT_SPEECH.test(cue.text));
+}
+
 /**
  * Adds new lines to the transcript. A line that mostly covers time that already has one is dropped,
  * so rewatching a part doesn't duplicate it. Returns a new array sorted by start.
