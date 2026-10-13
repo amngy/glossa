@@ -187,7 +187,8 @@ browser:
 - **Google**, once per language, if you turn on Chrome's built-in speech recognition in Settings and press the
   download button: a speech pack of about 60 MB. Google sees the download only. Recognition then runs on your
   device, and Glossa never uses Chrome's cloud recognizer: if the pack is missing or the browser can't keep
-  recognition on the device, it stops instead.
+  recognition on the device, it stops instead. Only Google Chrome gets these packs: Brave, Chromium and Chrome for
+  Testing offer the download but never finish it, so Glossa gives up after five minutes.
 - **jsDelivr** (`cdn.jsdelivr.net`), once per pack, when you press Install on an [optional pack](#optional-packs).
   Nothing is requested from it otherwise.
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads.

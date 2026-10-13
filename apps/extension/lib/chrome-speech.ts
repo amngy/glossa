@@ -45,7 +45,11 @@ export async function installChromeSpeech(language: string): Promise<void> {
   const tag = localSpeechTag(language);
   const speech = api();
   if (!tag || !speech || typeof speech.install !== 'function') throw new Error('Chrome has no on-device speech recognition for this language.');
-  if (!(await speech.install({ langs: [tag], processLocally: true }))) throw new Error('Chrome could not download the speech pack.');
+  // Brave, Chromium and Chrome for Testing report "downloadable" but never finish install() (#47 S5), so give up after a while.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('The download didn’t finish. Brave and Chromium don’t provide these packs; this needs Google Chrome.')), 5 * 60_000),
+  );
+  if (!(await Promise.race([speech.install({ langs: [tag], processLocally: true }), timeout]))) throw new Error('Chrome could not download the speech pack.');
 }
 
 /** Same shape as AsrSession (asr-capture.ts), so the offscreen document treats both alike. */
