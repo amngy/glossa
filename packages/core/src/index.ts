@@ -21,6 +21,7 @@ export {
   type SpokenLine,
   type Utterance,
 } from './asr/transcribe';
+export { localSpeechTag, startLocalOnly, type LocalRecognizer } from './asr/local-speech';
 
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';
