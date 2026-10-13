@@ -22,6 +22,8 @@ export type AsrEvent =
   | { kind: 'lines'; lines: SpokenLine[] }
   /** Lines already on the video's timeline, from audio read ahead of the playhead. */
   | { kind: 'cues'; cues: Cue[] }
+  /** The current best guess for the line being spoken; it may change with the next update. */
+  | { kind: 'partial'; text: string }
   | { kind: 'error'; message: string }
   | { kind: 'stopped' };
 

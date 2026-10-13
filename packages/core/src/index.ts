@@ -11,6 +11,7 @@ export { baseLanguage, languageName, languageFromFileName, COMMON_LANGUAGES } fr
 export { pickVoice, type VoiceLike } from './text/voice';
 export { rubyIn, rubyParts, rubySpans, type ReadingToken, type RubyPart, type RubySpan } from './text/ruby';
 
+export { LiveLine, type LiveText } from './asr/live';
 export {
   addTranscribedCues,
   Endpointer,
@@ -22,6 +23,7 @@ export {
   type Utterance,
 } from './asr/transcribe';
 export { isWebmInit, WebmDemuxer, type WebmFrame, type WebmTrack } from './asr/webm';
+export { localSpeechTag, startLocalOnly, type LocalRecognizer } from './asr/local-speech';
 
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';
