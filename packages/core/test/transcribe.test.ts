@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addTranscribedCues, Endpointer, MediaClock, placeSpokenLines } from '../src';
+import { addTranscribedCues, Endpointer, MediaClock, placeSpokenLines, segmentsToCues } from '../src';
 
 const RATE = 16000;
 const silence = (seconds: number) => new Float32Array(Math.round(seconds * RATE));
@@ -95,5 +95,19 @@ describe('placeSpokenLines / addTranscribedCues', () => {
       { start: 4, end: 4.9, text: 'between' },
     ];
     expect(addTranscribedCues(first, again).map((cue) => cue.text)).toEqual(['a', 'between', 'b', 'c']);
+  });
+});
+
+describe('segmentsToCues', () => {
+  it('moves segments to media time and drops noise lines', () => {
+    const segments = [
+      { start: 0.4, end: 1.9, text: ' 今週末は ' },
+      { start: 2, end: 2.5, text: '♪' },
+      { start: 2.6, end: null, text: '晴れです' },
+    ];
+    expect(segmentsToCues(segments, 40.25)).toEqual([
+      { start: 40.65, end: 42.15, text: '今週末は' },
+      { start: 42.85, end: 44.85, text: '晴れです' },
+    ]);
   });
 });

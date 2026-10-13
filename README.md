@@ -156,16 +156,17 @@ plain HTTP, so don't expose these ports to the internet.
 ## Desktop companion (optional, Windows)
 
 A small program that recognises speech on your own graphics card, for features that turn audio into
-subtitles. Nothing uses it yet in the extension beyond a connection test; it is the base for the
-look-ahead and live work. It needs an NVIDIA GPU (about 4 GB of video memory for `large-v3`; without
+subtitles. For now it serves "transcribe ahead" on YouTube (see [Subtitles from sound](#subtitles-from-sound));
+live tab audio still uses the speech pack. It needs an NVIDIA GPU (about 4 GB of video memory for `large-v3`; without
 one it falls back to a small model on the CPU), [uv](https://docs.astral.sh/uv/) and Chrome, Edge or Brave.
 
 1. In `apps/companion`, run `powershell -ExecutionPolicy Bypass -File install-windows.ps1 -Download`.
    It registers the companion for your user (no admin rights) and, with `-Download`, fetches the Python
    packages and CUDA libraries (about 1-2 GB, PyPI) and the `large-v3` model (about 3 GB, Hugging Face).
 2. Restart the browser and reload Glossa. The extension ID is fixed by the `key` in `wxt.config.ts`.
-3. The extension asks for the "nativeMessaging" permission only when a feature that uses the companion
-   is turned on.
+3. In Settings → Optional packs, turn on **Use the desktop companion for transcribing ahead**. The
+   browser asks for the "nativeMessaging" permission, and the switch shows whether the companion answers
+   and which model it runs (the first answer takes a few seconds while it loads the model).
 
 The companion only runs while the browser has it open, has no window, and reads audio only from Glossa
 over the browser's native messaging. After step 1 it never goes online.
@@ -255,7 +256,9 @@ Glossa asks once for permission to listen to tab audio. The video keeps playing 
   before it plays, so lines can be ready before they're spoken. No tab capture and no extra download:
   Glossa reads bytes the player already has. It switches YouTube's AI-dubbed audio back to the original
   track and skips ads. It reads Opus audio only for now; if your browser gets AAC audio from YouTube
-  (possible in branded Chrome or Edge), no lines appear.
+  (possible in branded Chrome or Edge), no lines appear. With the [desktop companion](#desktop-companion-optional-windows)
+  turned on, this audio is recognised by `large-v3` on your GPU instead, which is more accurate, and no
+  speech pack is needed. If the companion doesn't answer, Glossa says so and uses the speech pack.
 - **Chrome and Edge only** for now. Firefox has no tab audio capture for extensions.
 - Pages with protected video (DRM) may give silence. That isn't verified here.
 

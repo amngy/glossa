@@ -18,6 +18,7 @@ export {
   MediaClock,
   mixToMono,
   placeSpokenLines,
+  segmentsToCues,
   type EndpointOptions,
   type SpokenLine,
   type Utterance,
@@ -27,6 +28,7 @@ export { localSpeechTag, startLocalOnly, type LocalRecognizer } from './asr/loca
 
 export {
   COMPANION_HOST,
+  decodePcm,
   encodePcm,
   parseCompanionReply,
   type CompanionReply,

@@ -17,7 +17,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { OPENAI_PRESETS } from '@/lib/ai-presets';
 import { languageOptions } from '@/lib/languages';
 import { BuiltInModelSetup, OnDeviceModelSetup } from './ai-models';
-import { ChromeSpeechSetup, OptionalPacks, usePackInstalled } from './packs';
+import { ChromeSpeechSetup, CompanionSetup, OptionalPacks, usePackInstalled } from './packs';
 import { JAPANESE_READINGS } from '@/lib/packs';
 import { sendMessage } from '@/lib/messages';
 import { requestOrigins, requiredOrigins } from '@/lib/permissions';
@@ -718,6 +718,7 @@ function Options() {
                   On YouTube, transcribe ahead from the audio the player has already loaded (experimental)
                 </label>
               </div>
+              {browser.offscreen && <CompanionSetup enabled={settings.companion} onToggle={(on) => change({ companion: on })} />}
               {browser.offscreen && (
                 <ChromeSpeechSetup enabled={settings.chromeSpeech} language={settings.spokenLanguage} onToggle={(on) => change({ chromeSpeech: on })} />
               )}

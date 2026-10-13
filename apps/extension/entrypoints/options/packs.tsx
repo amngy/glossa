@@ -1,6 +1,7 @@
 import { browser } from '#imports';
 import { useEffect, useState } from 'preact/hooks';
 import { chromeSpeechAvailability, installChromeSpeech } from '@/lib/chrome-speech';
+import { sendMessage } from '@/lib/messages';
 import { installPack, isPackInstalled, PACKS, removePack, type Pack } from '@/lib/packs';
 
 const CHANGED = 'glossa-packs';
@@ -128,6 +129,54 @@ export function ChromeSpeechSetup({ enabled, language, onToggle }: { enabled: bo
         </div>
       )}
       {error && <p class="error">{error}</p>}
+    </div>
+  );
+}
+
+/** Opt-in switch for the desktop companion (apps/companion), with a connection check. */
+export function CompanionSetup({ enabled, onToggle }: { enabled: boolean; onToggle: (on: boolean) => void }) {
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    setStatus({ ok: true, text: 'Connecting…' });
+    // The first answer waits for the companion to load its model, a few seconds.
+    sendMessage('companionPing', null).then(
+      (engine) => setStatus({ ok: true, text: `Connected: ${engine}.` }),
+      () => setStatus({ ok: false, text: 'Not found.' }),
+    );
+  }, [enabled]);
+
+  const toggle = (on: boolean) => {
+    if (!on) return onToggle(false);
+    // Asked from the click itself: browsers need the user gesture.
+    void browser.permissions.request({ permissions: ['nativeMessaging'] }).then((granted) => granted && onToggle(true));
+  };
+
+  return (
+    <div class="pack">
+      <label class="switch">
+        <input type="checkbox" checked={enabled} onChange={(event) => toggle(event.currentTarget.checked)} />
+        <span>Use the desktop companion for transcribing ahead</span>
+      </label>
+      <span class="muted small block">
+        Recognises speech on your own graphics card with a program you install. The audio goes to that program over the browser, never
+        over the network. If it can’t be reached, the Whisper pack is used.
+      </span>
+      {enabled && status && (
+        <p class={status.ok ? 'ok' : 'error'}>
+          {status.text}
+          {!status.ok && (
+            <>
+              {' '}
+              See{' '}
+              <a href="https://github.com/amngy/glossa#desktop-companion-optional-windows" target="_blank" rel="noreferrer noopener">
+                how to install it
+              </a>
+              .
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }

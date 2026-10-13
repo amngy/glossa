@@ -25,6 +25,8 @@ export interface Settings {
   lookAhead: boolean;
   /** Recognise speech with Chrome's on-device engine instead of a Whisper pack. Off until the viewer opts in. */
   chromeSpeech: boolean;
+  /** Send look-ahead audio to the desktop companion (apps/companion) when it's reachable. Needs nativeMessaging. */
+  companion: boolean;
   translator: TranslatorChoice;
   libreTranslateUrl: string;
   ai: {
@@ -70,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   spokenLanguage: '',
   lookAhead: false,
   chromeSpeech: false,
+  companion: false,
   translator: 'browser',
   libreTranslateUrl: 'http://localhost:5000',
   ai: { provider: 'none', model: '', baseUrl: 'http://localhost:11434/v1', onDeviceModel: DEFAULT_ON_DEVICE_MODEL },
