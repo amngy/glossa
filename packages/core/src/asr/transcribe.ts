@@ -168,3 +168,21 @@ export function addTranscribedCues(existing: readonly Cue[], incoming: readonly 
     existing.some((other) => Math.min(other.end, cue.end) - Math.max(other.start, cue.start) > (cue.end - cue.start) / 2);
   return [...existing, ...incoming.filter((cue) => !covered(cue))].sort((a, b) => a.start - b.start);
 }
+
+/**
+ * Mixes decoded audio to mono at `toRate` (Whisper takes 16 kHz) by averaging the samples each output
+ * sample covers. A rough low-pass, enough for speech.
+ */
+export function mixToMono(channels: readonly Float32Array[], fromRate: number, toRate = 16000): Float32Array {
+  const length = channels[0]?.length ?? 0;
+  const out = new Float32Array(Math.floor((length * toRate) / fromRate));
+  const step = fromRate / toRate;
+  for (let i = 0; i < out.length; i++) {
+    const from = Math.floor(i * step);
+    const to = Math.max(from + 1, Math.floor((i + 1) * step));
+    let sum = 0;
+    for (const channel of channels) for (let j = from; j < to; j++) sum += channel[j]!;
+    out[i] = sum / ((to - from) * channels.length);
+  }
+  return out;
+}

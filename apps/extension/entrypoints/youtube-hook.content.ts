@@ -28,6 +28,9 @@ interface YouTubePlayer extends HTMLElement {
     };
   };
   getVideoData?(): { video_id?: string };
+  getAudioTrack?(): object;
+  getAvailableAudioTracks?(): object[];
+  setAudioTrack?(track: object): void;
   loadModule?(name: string): void;
   getOption?(module: string, option: string): unknown;
   setOption?(module: string, option: string, value: unknown): void;
@@ -97,6 +100,8 @@ export default defineContentScript({
     let tapAudio = false;
     let sourceBuffers = 0;
     const audioBuffers = new WeakMap<SourceBuffer, { buffer: number; mime: string }>();
+    /** The latest init segment (a few hundred bytes) of each audio buffer, sent again when the tap turns on. */
+    const inits = new Map<number, Extract<PageMessageBody, { type: 'audio-append' }>>();
     const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
     MediaSource.prototype.addSourceBuffer = function (this: MediaSource, mime: string) {
       const sourceBuffer = originalAddSourceBuffer.call(this, mime);
@@ -106,20 +111,63 @@ export default defineContentScript({
 
     const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
     SourceBuffer.prototype.appendBuffer = function (this: SourceBuffer, data: BufferSource) {
-      const audio = tapAudio ? audioBuffers.get(this) : undefined;
+      const audio = audioBuffers.get(this);
       if (audio) {
         try {
-          // Copied, because the player may reuse its buffer once the append is done.
-          const bytes = ArrayBuffer.isView(data)
-            ? data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
-            : data.slice(0);
-          post({ type: 'audio-append', ...audio, timestampOffset: this.timestampOffset, data: bytes as ArrayBuffer });
+          const view = ArrayBuffer.isView(data) ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength) : new Uint8Array(data);
+          const init = view[0] === 0x1a && view[1] === 0x45 && view[2] === 0xdf && view[3] === 0xa3;
+          if (tapAudio || init) {
+            const p = player();
+            const message: Extract<PageMessageBody, { type: 'audio-append' }> = {
+              type: 'audio-append',
+              ...audio,
+              timestampOffset: this.timestampOffset,
+              // Each ad plays from its own MediaSource on the same video, so this marks the ad's appends.
+              ad: !!p?.classList.contains('ad-showing'),
+              dubbed: !!audioTrackInfo(p?.getAudioTrack?.())?.isAutoDubbed,
+              videoId: p?.getVideoData?.()?.video_id,
+              // Copied, because the player may reuse its buffer once the append is done.
+              data: view.slice().buffer,
+            };
+            if (init) {
+              inits.set(audio.buffer, message);
+              if (inits.size > 16) inits.delete(inits.keys().next().value!);
+            }
+            if (tapAudio) {
+              post(message);
+              // Not during an ad: the player may not switch then, and it's tried once per video.
+              if (message.dubbed && !message.ad && p) pickOriginalAudio(p);
+            }
+          }
         } catch {
           // Never break YouTube because of Glossa.
         }
       }
       return originalAppendBuffer.call(this, data);
     };
+
+    /** The part of a player audio track that describes it; its property name is minified, so it's found by shape. */
+    function audioTrackInfo(track: object | undefined): { name?: string; isAutoDubbed?: boolean } | undefined {
+      for (const key in track) {
+        const value = (track as Record<string, unknown>)[key];
+        if (value && typeof value === 'object' && 'isAutoDubbed' in value) return value as { name?: string; isAutoDubbed?: boolean };
+      }
+      return undefined;
+    }
+
+    // YouTube may default to an AI-dubbed track; transcribing that would give the wrong language. Once per video.
+    let pickedFor: string | undefined;
+    function pickOriginalAudio(p: YouTubePlayer) {
+      const video = p.getVideoData?.()?.video_id;
+      if (video === pickedFor) return;
+      pickedFor = video;
+      const tracks = p.getAvailableAudioTracks?.() ?? [];
+      const original =
+        tracks.find((track) => /original/i.test(audioTrackInfo(track)?.name ?? '')) ??
+        tracks.find((track) => audioTrackInfo(track)?.isAutoDubbed === false);
+      // After the current append: switching makes a new MediaSource.
+      if (original) setTimeout(() => p.setAudioTrack?.(original));
+    }
 
     function player(): YouTubePlayer | null {
       return document.getElementById('movie_player') as YouTubePlayer | null;
@@ -165,6 +213,8 @@ export default defineContentScript({
           for (const { url, body } of captured) post({ type: 'timedtext', url, body });
           break;
         case 'audio-tap':
+          // Streams already running are read from their init segment; the receiver resyncs at the next cluster.
+          if (event.data.on && !tapAudio) for (const message of inits.values()) post({ ...message, replayed: true });
           tapAudio = event.data.on;
           break;
       }

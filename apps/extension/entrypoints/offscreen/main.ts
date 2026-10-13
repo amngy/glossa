@@ -1,7 +1,7 @@
 import { browser } from '#imports';
 import { japaneseReadings } from '@/lib/japanese-readings';
 import { isOffscreenEnvelope, type OffscreenReply, type WorkerReply, type WorkerRequest } from '@/lib/on-device';
-import type { AsrEnvelope, AsrEvent } from '@/lib/asr';
+import { isAheadAudio, type AsrEnvelope, type AsrEvent } from '@/lib/asr';
 import { AsrSession } from '@/lib/asr-capture';
 
 /**
@@ -30,7 +30,7 @@ function tellTab(tabId: number, event: AsrEvent): void {
   void browser.runtime.sendMessage({ glossaAsr: true, tabId, event } satisfies AsrEnvelope).catch(() => {});
 }
 
-function startAsr(tabId: number, streamId: string, language: string, pack: string): Promise<void> {
+function startAsr(tabId: number, streamId: string | undefined, language: string, pack: string): Promise<void> {
   asr?.stop();
   const session = new AsrSession(
     tabId,
@@ -47,7 +47,13 @@ function startAsr(tabId: number, streamId: string, language: string, pack: strin
 }
 
 browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
-  if (sender.id !== browser.runtime.id || !isOffscreenEnvelope(message)) return;
+  if (sender.id !== browser.runtime.id) return;
+  // Look-ahead audio comes straight from the YouTube tab's content script, in order; only that tab's is used.
+  if (isAheadAudio(message)) {
+    if (asr && asr.tabId === sender.tab?.id) asr.feed(message);
+    return;
+  }
+  if (!isOffscreenEnvelope(message)) return;
   const { request } = message;
   if (request.type === 'readings') {
     japaneseReadings(request.text).then(

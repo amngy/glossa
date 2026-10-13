@@ -650,6 +650,10 @@ function Options() {
         intro="Extra data that isn’t part of Glossa. Nothing is downloaded until you press Install, and it works offline afterwards."
       >
         <OptionalPacks />
+        <label class="switch">
+          <input type="checkbox" checked={settings.lookAhead} onChange={(event) => change({ lookAhead: event.currentTarget.checked })} />
+          On YouTube, transcribe ahead from the audio the player has already loaded (experimental)
+        </label>
       </Section>
 
       <VideoSites />

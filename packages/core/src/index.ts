@@ -15,11 +15,13 @@ export {
   addTranscribedCues,
   Endpointer,
   MediaClock,
+  mixToMono,
   placeSpokenLines,
   type EndpointOptions,
   type SpokenLine,
   type Utterance,
 } from './asr/transcribe';
+export { isWebmInit, WebmDemuxer, type WebmFrame, type WebmTrack } from './asr/webm';
 
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';

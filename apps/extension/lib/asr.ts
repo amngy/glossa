@@ -1,4 +1,4 @@
-import type { SpokenLine } from '@glossa/core';
+import type { Cue, SpokenLine } from '@glossa/core';
 
 /**
  * Speech recognition for videos without subtitles. The offscreen document listens to a tab's audio and
@@ -7,7 +7,8 @@ import type { SpokenLine } from '@glossa/core';
  */
 
 export type AsrRequest =
-  | { type: 'asr-start'; tabId: number; streamId: string; language: string; pack: string }
+  /** Without `streamId`, the audio comes from the page as `AheadAudio` (look-ahead on YouTube, #44). */
+  | { type: 'asr-start'; tabId: number; streamId?: string; language: string; pack: string }
   | { type: 'asr-stop' };
 
 export interface AsrStatus {
@@ -19,6 +20,8 @@ export type AsrEvent =
   | { kind: 'loading'; message: string }
   | { kind: 'listening'; language: string }
   | { kind: 'lines'; lines: SpokenLine[] }
+  /** Lines already on the video's timeline, from audio read ahead of the playhead. */
+  | { kind: 'cues'; cues: Cue[] }
   | { kind: 'error'; message: string }
   | { kind: 'stopped' };
 
@@ -31,6 +34,35 @@ export interface AsrEnvelope {
 
 export function isAsrEnvelope(message: unknown): message is AsrEnvelope {
   return typeof message === 'object' && message !== null && (message as AsrEnvelope).glossaAsr === true;
+}
+
+/**
+ * Audio frames the YouTube content script read from the player's appends, sent straight to the offscreen
+ * document. Opus only for now; `description` is the OpusHead, `time` is media time in seconds, both base64.
+ */
+export interface AheadAudio {
+  glossaAhead: true;
+  /** The page's SourceBuffer number; each has its own decoder. */
+  buffer: number;
+  sampleRate: number;
+  channels: number;
+  description?: string;
+  frames: { time: number; data: string }[];
+}
+
+export function isAheadAudio(message: unknown): message is AheadAudio {
+  return typeof message === 'object' && message !== null && (message as AheadAudio).glossaAhead === true;
+}
+
+// Extension messages are JSON, so bytes travel as base64.
+export function toBase64(bytes: Uint8Array): string {
+  let text = '';
+  for (let at = 0; at < bytes.length; at += 0x8000) text += String.fromCharCode(...bytes.subarray(at, at + 0x8000));
+  return btoa(text);
+}
+
+export function fromBase64(text: string): Uint8Array {
+  return Uint8Array.from(atob(text), (char) => char.charCodeAt(0));
 }
 
 /** Between the offscreen document and the worker that runs the model. */
