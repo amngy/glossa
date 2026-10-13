@@ -89,6 +89,29 @@ export interface ChatModel {
   complete(system: string, prompt: string, options?: ChatOptions): Promise<string>;
 }
 
+/** One recognised stretch of speech. Times are seconds from the start of the audio given. */
+export interface SpeechSegment {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface SpeechOptions {
+  signal?: AbortSignal;
+  /** BCP 47 tag of the spoken language. Leave out to let the model detect it. */
+  language?: string;
+}
+
+/** Audio-in/text-out interface implemented by each speech recognition engine. */
+export interface SpeechModel {
+  readonly name: string;
+  /** `pcm` is 16 kHz mono samples in -1..1. Resolves with the language heard and the segments in order. */
+  transcribe(
+    pcm: Float32Array,
+    options?: SpeechOptions,
+  ): Promise<{ language: string; segments: SpeechSegment[] }>;
+}
+
 export class ProviderError extends Error {
   constructor(
     message: string,

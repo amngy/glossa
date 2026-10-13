@@ -153,6 +153,23 @@ everyone's Glossa at it; nothing leaves your network, and there is nothing to bu
 Each browser asks for permission to reach that address when you save. Traffic inside a home network is
 plain HTTP, so don't expose these ports to the internet.
 
+## Desktop companion (optional, Windows)
+
+A small program that recognises speech on your own graphics card, for features that turn audio into
+subtitles. Nothing uses it yet in the extension beyond a connection test; it is the base for the
+look-ahead and live work. It needs an NVIDIA GPU (about 4 GB of video memory for `large-v3`; without
+one it falls back to a small model on the CPU), [uv](https://docs.astral.sh/uv/) and Chrome, Edge or Brave.
+
+1. In `apps/companion`, run `powershell -ExecutionPolicy Bypass -File install-windows.ps1 -Download`.
+   It registers the companion for your user (no admin rights) and, with `-Download`, fetches the Python
+   packages and CUDA libraries (about 1-2 GB, PyPI) and the `large-v3` model (about 3 GB, Hugging Face).
+2. Restart the browser and reload Glossa. The extension ID is fixed by the `key` in `wxt.config.ts`.
+3. The extension asks for the "nativeMessaging" permission only when a feature that uses the companion
+   is turned on.
+
+The companion only runs while the browser has it open, has no window, and reads audio only from Glossa
+over the browser's native messaging. After step 1 it never goes online.
+
 ## Other sites
 
 Glossa doesn't run on other sites until you ask it to, so it needs no access to them at install time.
@@ -191,6 +208,9 @@ browser:
   Testing offer the download but never finish it, so Glossa gives up after five minutes.
 - **jsDelivr** (`cdn.jsdelivr.net`), once per pack, when you press Install on an [optional pack](#optional-packs).
   Nothing is requested from it otherwise.
+- **Desktop companion** (optional): the audio goes to a program on your computer, never over the
+  network. Only the one-time installs reach out: PyPI (Python packages, CUDA libraries) and Hugging Face
+  (model).
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads, and, with
   "transcribe ahead" on, the audio it already downloaded. Neither is a new request.
 

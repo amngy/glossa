@@ -25,6 +25,14 @@ export {
 export { isWebmInit, WebmDemuxer, type WebmFrame, type WebmTrack } from './asr/webm';
 export { localSpeechTag, startLocalOnly, type LocalRecognizer } from './asr/local-speech';
 
+export {
+  COMPANION_HOST,
+  encodePcm,
+  parseCompanionReply,
+  type CompanionReply,
+  type CompanionRequest,
+} from './asr/companion';
+
 export * from './providers/types';
 export { WiktionaryDictionary, parseWiktionaryResponse } from './providers/wiktionary';
 export { LlmDictionary, parseDictionaryReply } from './providers/llm-dictionary';
