@@ -119,8 +119,10 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
   if (tabId === undefined || pack === undefined) return null;
 
   const engine = settings.chromeSpeech ? CHROME_SPEECH : pack?.id;
+  // The desktop companion only takes look-ahead audio; the background worker falls back to the pack.
+  const aheadReady = ahead && (!!pack || settings.companion);
 
-  if (!engine) {
+  if (!engine && !aheadReady) {
     return (
       <section class="popup-page">
         <p class="popup-hint muted">No subtitles? Glossa can write them from the video’s sound, on this device.</p>
@@ -134,9 +136,9 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
   const start = async () => {
     setMessage('Starting…');
     try {
-      if (ahead && pack) {
+      if (aheadReady) {
         if (language !== settings.spokenLanguage) void updateSettings({ spokenLanguage: language });
-        await sendMessage('asrStart', { tabId, language, pack: pack.id });
+        await sendMessage('asrStart', { tabId, language, pack: pack?.id ?? '' });
         window.close();
         return;
       }
@@ -149,7 +151,7 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
       // Other sites need Glossa's overlay started first; YouTube's is always there.
       if (!isYouTube(tab.url)) await startOnTab(tabId);
       if (language !== settings.spokenLanguage) void updateSettings({ spokenLanguage: language });
-      await sendMessage('asrStart', { tabId, streamId, language, pack: engine });
+      await sendMessage('asrStart', { tabId, streamId, language, pack: engine! }); // set: only look-ahead starts without one
       window.close();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));

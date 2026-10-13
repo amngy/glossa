@@ -7,8 +7,12 @@ import type { Cue, SpokenLine } from '@glossa/core';
  */
 
 export type AsrRequest =
-  /** Without `streamId`, the audio comes from the page as `AheadAudio` (look-ahead on YouTube, #44). */
-  | { type: 'asr-start'; tabId: number; streamId?: string; language: string; pack: string }
+  /**
+   * Without `streamId`, the audio comes from the page as `AheadAudio` (look-ahead on YouTube, #44).
+   * `pack` is a Whisper pack id, CHROME_SPEECH, or COMPANION_HOST for the desktop companion (look-ahead only).
+   * `notice` replaces the usual loading message.
+   */
+  | { type: 'asr-start'; tabId: number; streamId?: string; language: string; pack: string; notice?: string }
   | { type: 'asr-stop' };
 
 export interface AsrStatus {

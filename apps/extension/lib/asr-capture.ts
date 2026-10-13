@@ -1,6 +1,7 @@
 import { browser } from '#imports';
-import { Endpointer, mixToMono, type Cue, type SpokenLine } from '@glossa/core';
+import { COMPANION_HOST, encodePcm, Endpointer, mixToMono, segmentsToCues, type SpokenLine } from '@glossa/core';
 import { fromBase64, type AheadAudio, type AsrEvent, type AsrWorkerReply, type AsrWorkerRequest } from './asr';
+import { sendMessage } from './messages';
 
 /** Whisper's input rate. */
 const SAMPLE_RATE = 16000;
@@ -10,9 +11,6 @@ const MAX_BACKLOG = 4;
 const MAX_AHEAD_BACKLOG = 40;
 /** Decoded audio that doesn't continue the previous chunk within this (seconds) starts a new run, e.g. after a seek. */
 const MAX_GAP = 0.1;
-
-/** Whisper makes up lines for noise and music. These are the usual ones. */
-const NOT_SPEECH = /^[\s♪♫♬~…・.,、。!?！？\-–—'"“”()（）\[\]【】]*$/;
 
 interface Waiting {
   /** Where the utterance starts: wall-clock ms for captured audio, media seconds for look-ahead audio. */
@@ -34,6 +32,7 @@ interface AheadStream {
  * → Whisper in a worker → lines with wall-clock times. The tab keeps playing for the viewer.
  * Without a stream, the page sends the audio instead (`feed`): frames YouTube's player has buffered
  * ahead of the playhead, decoded here, so lines carry media times and can be ready before they're spoken.
+ * Those can go to the desktop companion instead of Whisper; the background worker holds its connection.
  */
 export class AsrSession {
   private worker: Worker | null = null;
@@ -52,6 +51,7 @@ export class AsrSession {
   private queue: ({ id: number; samples: Float32Array } & Waiting)[] = [];
   private language = '';
   private fromPage = false;
+  private companion = false;
   private readonly ahead = new Map<number, AheadStream>();
 
   constructor(
@@ -60,11 +60,17 @@ export class AsrSession {
     private readonly onEnd: () => void,
   ) {}
 
-  async start(streamId: string | undefined, language: string, pack: string): Promise<void> {
+  async start(streamId: string | undefined, language: string, pack: string, notice?: string): Promise<void> {
     this.language = language;
     this.fromPage = !streamId;
-    this.emit({ kind: 'loading', message: 'Loading the speech model…' });
+    this.emit({ kind: 'loading', message: notice ?? 'Loading the speech model…' });
     if (streamId) await this.capture(streamId);
+    if (pack === COMPANION_HOST && this.fromPage) {
+      // The background worker already reached the companion, so its model is loaded.
+      this.companion = true;
+      this.onReply({ type: 'ready' });
+      return;
+    }
 
     const worker = new Worker(browser.runtime.getURL('/asr-worker.js'));
     this.worker = worker;
@@ -178,11 +184,18 @@ export class AsrSession {
 
   private pump(): void {
     const next = this.queue[0];
-    if (this.busy || !this.ready || !next || !this.worker) return;
+    if (this.busy || !this.ready || !next || !(this.worker || this.companion)) return;
     this.queue.shift();
     this.busy = true;
     this.waiting.set(next.id, { startWall: next.startWall, startMedia: next.startMedia });
-    this.worker.postMessage({ type: 'transcribe', id: next.id, samples: next.samples, language: this.language } satisfies AsrWorkerRequest, [
+    if (this.companion) {
+      sendMessage('companionTranscribe', { pcm: encodePcm(next.samples), language: this.language }).then(
+        ({ segments }) => this.onReply({ type: 'lines', id: next.id, chunks: segments }),
+        (error: unknown) => this.onReply({ type: 'error', id: next.id, message: error instanceof Error ? error.message : String(error) }),
+      );
+      return;
+    }
+    this.worker?.postMessage({ type: 'transcribe', id: next.id, samples: next.samples, language: this.language } satisfies AsrWorkerRequest, [
       next.samples.buffer,
     ]);
   }
@@ -211,20 +224,15 @@ export class AsrSession {
     this.waiting.delete(reply.id);
     this.busy = false;
     if (waiting) {
-      const spoken = reply.chunks
-        .map((chunk) => ({ ...chunk, text: chunk.text.trim() }))
-        .filter((chunk) => chunk.text && !NOT_SPEECH.test(chunk.text));
-      // The last chunk of an utterance has no end time; the next utterance's start would cap it anyway.
-      const end = (chunk: { start: number; end: number | null }) => chunk.end ?? chunk.start + 2;
       const { startMedia, startWall } = waiting;
       if (startMedia !== undefined) {
-        const cues: Cue[] = spoken.map((chunk) => ({ start: startMedia + chunk.start, end: startMedia + end(chunk), text: chunk.text }));
+        const cues = segmentsToCues(reply.chunks, startMedia);
         if (cues.length > 0) this.emit({ kind: 'cues', cues });
       } else if (startWall !== undefined) {
-        const lines: SpokenLine[] = spoken.map((chunk) => ({
-          startWall: startWall + chunk.start * 1000,
-          endWall: startWall + end(chunk) * 1000,
-          text: chunk.text,
+        const lines: SpokenLine[] = segmentsToCues(reply.chunks, 0).map((cue) => ({
+          startWall: startWall + cue.start * 1000,
+          endWall: startWall + cue.end * 1000,
+          text: cue.text,
         }));
         if (lines.length > 0) this.emit({ kind: 'lines', lines });
       }

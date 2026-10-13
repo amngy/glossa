@@ -1,5 +1,5 @@
 import { browser } from '#imports';
-import type { DictionaryEntry, ExplainRequest, ReadingToken, TranslationRequest } from '@glossa/core';
+import type { DictionaryEntry, ExplainRequest, ReadingToken, SpeechSegment, TranslationRequest } from '@glossa/core';
 import type { AsrStatus } from './asr';
 import type { OnDeviceStatus } from './on-device';
 
@@ -30,6 +30,8 @@ export interface MessageMap {
   asrStop: { request: null; response: null };
   /** Starts the desktop companion if needed and returns its engine name. Needs the nativeMessaging permission. */
   companionPing: { request: null; response: string };
+  /** From the offscreen document: one utterance for the companion, `pcm` as from `encodePcm`. */
+  companionTranscribe: { request: { pcm: string; language: string }; response: { language: string; segments: SpeechSegment[] } };
   asrStatus: { request: null; response: AsrStatus };
 }
 
