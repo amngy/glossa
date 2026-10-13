@@ -42,3 +42,22 @@ export function languageFromFileName(fileName: string): string | null {
   }
   return null;
 }
+
+/** OpenSubtitles codes that aren't ISO 639-2. */
+const SUBTITLE_CODES: Record<string, string> = { pob: 'pt-BR', spn: 'es-ES', spl: 'es-419', zht: 'zh-Hant', zhe: 'zh' };
+
+/**
+ * A language tag for a subtitle add-on's code, as Stremio add-ons give them: ISO 639-2 ("jpn", "ger",
+ * "fre") → "ja", "de", "fr". Returns null for codes no browser knows.
+ */
+export function languageFromSubtitleCode(code: string): string | null {
+  const lower = code.trim().toLowerCase();
+  if (SUBTITLE_CODES[lower]) return SUBTITLE_CODES[lower];
+  try {
+    // Canonicalizing maps ISO 639-2 codes, bibliographic ones too, to their two-letter tags.
+    const tag = Intl.getCanonicalLocales(lower)[0];
+    return tag && new Intl.DisplayNames(['en'], { type: 'language', fallback: 'none' }).of(tag) ? tag : null;
+  } catch {
+    return null;
+  }
+}

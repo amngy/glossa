@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { baseLanguage, languageFromFileName, languageName, normalizeWord, rubyIn, rubyParts, rubySpans, tokenize } from '../src';
+import { baseLanguage, languageFromFileName, languageFromSubtitleCode, languageName, normalizeWord, rubyIn, rubyParts, rubySpans, tokenize } from '../src';
 
 const words = (text: string, lang: string) =>
   tokenize(text, lang)
@@ -102,5 +102,28 @@ describe('ruby', () => {
     // A reading that crosses the phrase boundary is dropped rather than split.
     expect(rubyIn(text, spans, 1, 5)).toEqual([{ text: '日は' }, { text: '映画', ruby: 'えいが' }]);
     expect(rubySpans(text, [{ surface: '昨', reading: 'サク' }])).toEqual([]);
+  });
+});
+
+describe('languageFromSubtitleCode', () => {
+  it('maps ISO 639-2 and OpenSubtitles codes to language tags', () => {
+    expect(languageFromSubtitleCode('eng')).toBe('en');
+    expect(languageFromSubtitleCode('jpn')).toBe('ja');
+    expect(languageFromSubtitleCode('ger')).toBe('de');
+    expect(languageFromSubtitleCode('deu')).toBe('de');
+    expect(languageFromSubtitleCode('fre')).toBe('fr');
+    expect(languageFromSubtitleCode('kor')).toBe('ko');
+    expect(languageFromSubtitleCode('may')).toBe('ms');
+    expect(languageFromSubtitleCode('ice')).toBe('is');
+    expect(languageFromSubtitleCode('spl')).toBe('es-419');
+    expect(languageFromSubtitleCode('spn')).toBe('es-ES');
+    expect(languageFromSubtitleCode('pob')).toBe('pt-BR');
+    expect(languageFromSubtitleCode('en')).toBe('en');
+  });
+
+  it('returns null for unknown codes', () => {
+    expect(languageFromSubtitleCode('xyz')).toBeNull();
+    expect(languageFromSubtitleCode('')).toBeNull();
+    expect(languageFromSubtitleCode('not a code')).toBeNull();
   });
 });

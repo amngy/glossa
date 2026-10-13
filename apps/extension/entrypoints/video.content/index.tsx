@@ -7,6 +7,7 @@ import { initialState } from '@/components/overlay/state';
 import { getSettings } from '@/lib/settings';
 import { createStore } from '@/lib/store';
 import { VideoController } from './controller';
+import { startStremio } from './stremio';
 
 /** Where the overlay goes: inside the fullscreen element, so it stays visible there. */
 function overlayParent(): Element {
@@ -53,6 +54,7 @@ export default defineContentScript({
     });
 
     controller.start();
+    if (location.hostname === 'web.stremio.com') startStremio(ctx, controller, store);
     return { videos: controller.videoCount() };
   },
 });

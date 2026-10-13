@@ -189,6 +189,13 @@ Glossa doesn't run on other sites until you ask it to, so it needs no access to 
 Tick **Always on <site>** in the popup to start Glossa there by itself; the browser asks for access to that
 site. Remove sites under **Other sites** on the settings page.
 
+**Stremio Web** (`web.stremio.com`) draws subtitles from files it downloads itself. Glossa reads those files
+and lists each one in its toolbar by language. The subtitle you pick in Stremio becomes Glossa's; one in your
+own language becomes the line translation, and Stremio's own subtitles are hidden while Glossa shows its
+own. Tick **Always on web.stremio.com** in the popup: started from the button instead, Glossa only sees the
+subtitles Stremio downloads after that, so pick the subtitle again in Stremio, and it has to guess their
+language from the text. The Stremio desktop app can't load extensions.
+
 Limits: subtitles a site draws itself (rather than as `<track>` elements) aren't read, so load a file
 instead. Cross-site subtitle tracks only load if the site allows it. If a player puts the bare video
 element into fullscreen, nothing can be drawn over it, so the browser shows the subtitles without clickable
@@ -221,7 +228,8 @@ browser:
   "transcribe ahead" on, the audio it already downloaded. Neither is a new request.
 
 On other sites Glossa only reads the subtitle tracks the page already loaded, or the file you pick. It
-sends nothing to those sites.
+sends nothing to those sites. On Stremio Web it reads the subtitle files and list Stremio already downloaded;
+that's no new request either.
 
 API keys stay in your browser's extension storage on this device. They aren't synced, and only Glossa's
 background script reads them. Glossa asks for permission to reach a server only when you save a setting
@@ -309,7 +317,7 @@ create `apps/extension/web-ext.config.ts`; it's ignored by git. See
 ```
 packages/core        Platform-independent logic, no browser APIs
   src/subtitles      Parsing YouTube json3, WebVTT and SRT; finding the active cue
-  src/text           Word segmentation (Intl.Segmenter), language names, guessing a file's language from its name
+  src/text           Word segmentation (Intl.Segmenter), language names, guessing a file's language from its name or add-on code
   src/providers      Translators, Wiktionary, AI models (Claude, OpenAI-compatible, the browser's built-in model), prompts
   src/asr            Speech: cutting audio at pauses, WebM demuxing, live lines, the companion protocol
   src/vocab.ts       CSV and Anki export
@@ -318,6 +326,7 @@ apps/extension       Browser extension (WXT + Preact, Manifest V3)
   entrypoints/youtube-hook.content.ts   Runs in YouTube's page; sees caption requests, drives the player API
   entrypoints/youtube.content/          YouTube's controller: loads captions, sizes the overlay to the player
   entrypoints/video.content/            Any page's HTML5 video: <track>s or a subtitle file. Started from the popup
+  entrypoints/stremio-hook.content.ts   Runs in Stremio Web's page; copies the subtitle files its player downloads
   components/overlay/                   The overlay shared by both: subtitles, toolbar, word card, base controller
   entrypoints/background.ts             Provider calls, cache, API keys
   entrypoints/offscreen, llm-worker.ts  Glossa's on-device model: a hidden page running WebLLM in a worker
