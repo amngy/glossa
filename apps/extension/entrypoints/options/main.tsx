@@ -38,9 +38,30 @@ import { clearKnown, clearVocab, getKnown, getVocab, removeWord, watchKnown, wat
 
 type Notice = { kind: 'ok' | 'error'; text: string } | null;
 
-function Section({ id, title, intro, children }: { id?: string; title: string; intro?: ComponentChildren; children: ComponentChildren }) {
+// The ids double as URL hashes: the popup links to #packs and #words.
+const PAGES = [
+  { id: 'general', label: 'General' },
+  { id: 'translation', label: 'Translation' },
+  { id: 'ai', label: 'AI explanations' },
+  { id: 'packs', label: 'Optional packs' },
+  { id: 'sites', label: 'Other sites' },
+  { id: 'words', label: 'Saved words' },
+] as const;
+type PageId = (typeof PAGES)[number]['id'];
+
+const pageFromHash = (): PageId => PAGES.find((page) => `#${page.id}` === location.hash)?.id ?? 'general';
+
+const SHORTCUTS = [
+  ['A', 'Previous line'],
+  ['S', 'Replay line'],
+  ['D', 'Next line'],
+  ['Q', 'Show / blur / hide translation'],
+  ['Esc', 'Close the word card'],
+];
+
+function Section({ title, intro, children }: { title: string; intro?: ComponentChildren; children: ComponentChildren }) {
   return (
-    <section id={id} class="section">
+    <section class="section">
       <h2>{title}</h2>
       {intro && <p class="muted section-intro">{intro}</p>}
       {children}
@@ -116,7 +137,6 @@ function SavedWords() {
 
   return (
     <Section
-      id="words"
       title={`Saved words (${words.length})`}
       intro="Words you star in the subtitles, with the line they came from. Export them to a spreadsheet or to Anki (File → Import)."
     >
@@ -325,6 +345,7 @@ function Options() {
   const [notice, setNotice] = useState<Notice>(null);
   const [translatorTest, setTranslatorTest] = useState<Notice>(null);
   const [aiTest, setAiTest] = useState<Notice>(null);
+  const [page, setPage] = useState<PageId>(pageFromHash);
   const readingsInstalled = usePackInstalled(JAPANESE_READINGS) === true;
 
   useEffect(() => {
@@ -332,10 +353,13 @@ function Options() {
       setStored(loadedSettings);
       setSecrets(loadedSecrets);
     });
-    if (location.hash === '#words') {
-      setTimeout(() => document.getElementById('words')?.scrollIntoView(), 100);
-    }
-    return watchSettings(setStored);
+    const onHashChange = () => setPage(pageFromHash());
+    window.addEventListener('hashchange', onHashChange);
+    const unwatch = watchSettings(setStored);
+    return () => {
+      window.removeEventListener('hashchange', onHashChange);
+      unwatch();
+    };
   }, []);
 
   if (!stored || !secrets) return null;
@@ -395,273 +419,316 @@ function Options() {
   const version = browser.runtime.getManifest().version;
 
   return (
-    <main class="options">
+    <div class="options">
       <header class="page-header">
         <h1>Glossa</h1>
         <p class="muted">Interactive subtitles for language learners. Free and open source.</p>
       </header>
 
-      <Section title="Your language" intro="Translations and explanations are written in this language.">
-        <Field label="Translate into">
-          <select value={settings.nativeLanguage} onChange={(event) => change({ nativeLanguage: event.currentTarget.value })}>
-            {languageOptions(settings.nativeLanguage).map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </Section>
+      <div class="layout">
+        <nav class="nav" aria-label="Settings">
+          {PAGES.map((item) => (
+            <a key={item.id} href={`#${item.id}`} aria-current={item.id === page ? 'page' : undefined}>
+              {item.label}
+            </a>
+          ))}
+        </nav>
 
-      <Section
-        title="Translation"
-        intro="Whole lines are translated by YouTube when it can, or taken from a video’s subtitles in your language. This translator handles single words and all other lines."
-      >
-        <div class="choices">
-          <Choice<TranslatorChoice>
-            name="translator"
-            value="browser"
-            current={settings.translator}
-            onSelect={(translator) => change({ translator })}
-            title="Built-in browser translator"
-            description={
-              browserTranslatorAvailable
-                ? 'Free and private: runs on your device. Available in this browser.'
-                : 'Free and private, but not available in this browser (needs Chrome or Edge 138+). Choose another option.'
-            }
-          />
-          <Choice<TranslatorChoice>
-            name="translator"
-            value="libretranslate"
-            current={settings.translator}
-            onSelect={(translator) => change({ translator })}
-            title="LibreTranslate"
-            description="Open-source translation server you can host yourself."
-          >
-            <Field label="Server URL" hint="For a local Docker install this is usually http://localhost:5000.">
-              <input
-                type="url"
-                value={settings.libreTranslateUrl}
-                onInput={(event) => change({ libreTranslateUrl: event.currentTarget.value.trim() })}
-              />
-            </Field>
-            <Field label="API key (optional)">
-              <input
-                type="password"
-                autocomplete="off"
-                value={secrets.libreTranslateApiKey}
-                onInput={(event) => changeSecret({ libreTranslateApiKey: event.currentTarget.value.trim() })}
-              />
-            </Field>
-          </Choice>
-          <Choice<TranslatorChoice>
-            name="translator"
-            value="deepl"
-            current={settings.translator}
-            onSelect={(translator) => change({ translator })}
-            title="DeepL"
-            description="High-quality translation. The free API plan covers 500,000 characters a month."
-          >
-            <Field label="DeepL API key">
-              <input
-                type="password"
-                autocomplete="off"
-                value={secrets.deeplApiKey}
-                onInput={(event) => changeSecret({ deeplApiKey: event.currentTarget.value.trim() })}
-              />
-            </Field>
-          </Choice>
-          <Choice<TranslatorChoice>
-            name="translator"
-            value="ai"
-            current={settings.translator}
-            onSelect={(translator) => change({ translator })}
-            title="AI model"
-            description="Uses the AI model set up below. Good with slang and context, but slower."
-          />
-        </div>
-        <div class="row">
-          <button class="button" onClick={testTranslator} disabled={dirty}>
-            Test translator
-          </button>
-          {dirty && <span class="muted">Save your changes to test them.</span>}
-          {translatorTest && <span class={translatorTest.kind}>{translatorTest.text}</span>}
-        </div>
-      </Section>
+        <main class="pages">
+          {page === 'general' && (
+            <>
+              <Section title="Your language" intro="Translations and explanations are written in this language.">
+                <Field label="Translate into">
+                  <select value={settings.nativeLanguage} onChange={(event) => change({ nativeLanguage: event.currentTarget.value })}>
+                    {languageOptions(settings.nativeLanguage).map((option) => (
+                      <option key={option.code} value={option.code}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </Section>
 
-      <Section
-        title="AI explanations (optional)"
-        intro="Explains a word or line in context: meaning, dictionary form, grammar and idioms. When you ask, the word, its subtitle line and the lines around it go to the model you choose. The first two options keep everything on this computer."
-      >
-        <div class="choices">
-          <Choice<AiProvider>
-            name="ai"
-            value="none"
-            current={settings.ai.provider}
-            onSelect={(provider) => changeAi({ provider })}
-            title="Off"
-            description="Dictionary definitions and translations only."
-          />
-          <Choice<AiProvider>
-            name="ai"
-            value="built-in"
-            current={settings.ai.provider}
-            onSelect={(provider) => changeAi({ provider })}
-            title="Built into the browser"
-            description="Free and private. Chrome’s own model (Gemini Nano) runs on this computer. Best in English, Spanish, Japanese, German and French."
-          >
-            <BuiltInModelSetup language={settings.nativeLanguage} />
-          </Choice>
-          <Choice<AiProvider>
-            name="ai"
-            value="on-device"
-            current={settings.ai.provider}
-            onSelect={(provider) => changeAi({ provider })}
-            title="Glossa’s on-device model"
-            description="Free and private. Downloads an open model (Qwen3.5) once, then runs it on your graphics card, even offline. Knows many languages."
-          >
-            <OnDeviceModelSetup value={settings.ai.onDeviceModel} onChange={(onDeviceModel) => changeAi({ onDeviceModel })} />
-          </Choice>
-          <Choice<AiProvider>
-            name="ai"
-            value="anthropic"
-            current={settings.ai.provider}
-            onSelect={(provider) => changeAi({ provider, model: '' })}
-            title="Claude (Anthropic)"
-            description={
-              <>
-                Needs an API key from{' '}
-                <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer noopener">
-                  console.anthropic.com
-                </a>
-                . You pay Anthropic per use.
-              </>
-            }
-          >
-            <Field label="Anthropic API key">
-              <input
-                type="password"
-                autocomplete="off"
-                value={secrets.anthropicApiKey}
-                onInput={(event) => changeSecret({ anthropicApiKey: event.currentTarget.value.trim() })}
-              />
-            </Field>
-            <Field label="Model" hint={`Leave empty to use ${DEFAULT_ANTHROPIC_MODEL}.`}>
-              <input
-                type="text"
-                placeholder={DEFAULT_ANTHROPIC_MODEL}
-                value={settings.ai.model}
-                onInput={(event) => changeAi({ model: event.currentTarget.value.trim() })}
-              />
-            </Field>
-          </Choice>
-          <Choice<AiProvider>
-            name="ai"
-            value="openai-compatible"
-            current={settings.ai.provider}
-            onSelect={(provider) => changeAi({ provider, model: '' })}
-            title="OpenAI, Gemini, Ollama or another server"
-            description="Any service or server with an OpenAI-compatible API: hosted (OpenAI, Gemini, Groq, Mistral, OpenRouter…), on your computer, or on your network. Bigger models give better answers."
-          >
-            <OpenAICompatibleSetup
-              ai={settings.ai}
-              apiKey={secrets.openaiCompatibleApiKey}
-              changeAi={changeAi}
-              changeApiKey={(openaiCompatibleApiKey) => changeSecret({ openaiCompatibleApiKey })}
-            />
-          </Choice>
-        </div>
-        {settings.ai.provider !== 'none' && (
-          <div class="row">
-            <button class="button" onClick={testAi} disabled={dirty}>
-              Test AI
-            </button>
-            {dirty && <span class="muted">Save your changes to test them.</span>}
-            {aiTest && <span class={`${aiTest.kind} pre`}>{aiTest.text}</span>}
-          </div>
-        )}
-        <p class="muted small">API keys are stored only in this browser and are sent only to the provider they belong to.</p>
-      </Section>
+              <Section title="Subtitles">
+                <Field label="Line translation">
+                  <select
+                    value={settings.translationDisplay}
+                    onChange={(event) => change({ translationDisplay: event.currentTarget.value as Settings['translationDisplay'] })}
+                  >
+                    <option value="show">Show under each line</option>
+                    <option value="blur">Blur until I hover over it</option>
+                    <option value="hide">Hide</option>
+                  </select>
+                </Field>
+                <Field label={`Size: ${Math.round(settings.fontScale * 100)}%`}>
+                  <input
+                    type="range"
+                    min="0.6"
+                    max="1.8"
+                    step="0.1"
+                    value={settings.fontScale}
+                    onInput={(event) => change({ fontScale: Number(event.currentTarget.value) })}
+                  />
+                </Field>
+                <Field
+                  label={`Position: ${settings.subtitlePosition > 0 ? `raised ${Math.round(settings.subtitlePosition)}%` : 'bottom'}`}
+                  hint="Move the subtitles up, for example when a video has subtitles burned in. You can also drag them by the Glossa label above the line."
+                >
+                  <input
+                    type="range"
+                    min="0"
+                    max={MAX_SUBTITLE_POSITION}
+                    step="1"
+                    value={settings.subtitlePosition}
+                    onInput={(event) => change({ subtitlePosition: Number(event.currentTarget.value) })}
+                  />
+                </Field>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    checked={settings.showReadings}
+                    disabled={!readingsInstalled}
+                    onChange={(event) => change({ showReadings: event.currentTarget.checked })}
+                  />
+                  <span>
+                    Furigana over kanji (Japanese)
+                    {!readingsInstalled && (
+                      <span class="muted">
+                        {' '}
+                        · install the <a href="#packs">Japanese readings pack</a> first
+                      </span>
+                    )}
+                  </span>
+                </label>
+              </Section>
 
-      <Section title="Playback">
-        <Field label="Line translation">
-          <select
-            value={settings.translationDisplay}
-            onChange={(event) => change({ translationDisplay: event.currentTarget.value as Settings['translationDisplay'] })}
-          >
-            <option value="show">Show under each line</option>
-            <option value="blur">Blur until I hover over it</option>
-            <option value="hide">Hide</option>
-          </select>
-        </Field>
-        <label class="switch">
-          <input type="checkbox" checked={settings.pauseOnHover} onChange={(event) => change({ pauseOnHover: event.currentTarget.checked })} />
-          Pause while the mouse is over the subtitles
-        </label>
-        <label class="switch">
-          <input type="checkbox" checked={settings.autoPause} onChange={(event) => change({ autoPause: event.currentTarget.checked })} />
-          Pause after every line
-        </label>
-        <label class="switch">
-          <input type="checkbox" checked={settings.markNewWords} onChange={(event) => change({ markNewWords: event.currentTarget.checked })} />
-          Underline words I haven’t saved or marked as known
-        </label>
-        <label class="switch">
-          <input
-            type="checkbox"
-            checked={settings.showReadings}
-            disabled={!readingsInstalled}
-            onChange={(event) => change({ showReadings: event.currentTarget.checked })}
-          />
-          Furigana over kanji (Japanese){readingsInstalled ? '' : ' · install the Japanese readings pack below first'}
-        </label>
-        <Field label={`Subtitle size: ${Math.round(settings.fontScale * 100)}%`}>
-          <input
-            type="range"
-            min="0.6"
-            max="1.8"
-            step="0.1"
-            value={settings.fontScale}
-            onInput={(event) => change({ fontScale: Number(event.currentTarget.value) })}
-          />
-        </Field>
-        <Field
-          label={`Subtitle position: ${settings.subtitlePosition > 0 ? `raised ${Math.round(settings.subtitlePosition)}%` : 'bottom'}`}
-          hint="Move the subtitles up, for example when a video has subtitles burned in. You can also drag them by the Glossa label above the line."
-        >
-          <input
-            type="range"
-            min="0"
-            max={MAX_SUBTITLE_POSITION}
-            step="1"
-            value={settings.subtitlePosition}
-            onInput={(event) => change({ subtitlePosition: Number(event.currentTarget.value) })}
-          />
-        </Field>
-        <p class="muted shortcuts">
-          Shortcuts while watching: <kbd>A</kbd> previous line · <kbd>S</kbd> replay line · <kbd>D</kbd> next line ·{' '}
-          <kbd>Q</kbd> show / blur / hide translation · <kbd>Esc</kbd> close the word card
-        </p>
-      </Section>
+              <Section title="Behaviour">
+                <label class="switch">
+                  <input type="checkbox" checked={settings.pauseOnHover} onChange={(event) => change({ pauseOnHover: event.currentTarget.checked })} />
+                  Pause while the mouse is over the subtitles
+                </label>
+                <label class="switch">
+                  <input type="checkbox" checked={settings.autoPause} onChange={(event) => change({ autoPause: event.currentTarget.checked })} />
+                  Pause after every line
+                </label>
+                <label class="switch">
+                  <input type="checkbox" checked={settings.markNewWords} onChange={(event) => change({ markNewWords: event.currentTarget.checked })} />
+                  Underline words I haven’t saved or marked as known
+                </label>
+              </Section>
 
-      <Section
-        id="packs"
-        title="Optional packs"
-        intro="Extra data that isn’t part of Glossa. Nothing is downloaded until you press Install, and it works offline afterwards."
-      >
-        <OptionalPacks />
-        <label class="switch">
-          <input type="checkbox" checked={settings.lookAhead} onChange={(event) => change({ lookAhead: event.currentTarget.checked })} />
-          On YouTube, transcribe ahead from the audio the player has already loaded (experimental)
-        </label>
-        {browser.offscreen && (
-          <ChromeSpeechSetup enabled={settings.chromeSpeech} language={settings.spokenLanguage} onToggle={(on) => change({ chromeSpeech: on })} />
-        )}
-      </Section>
+              <Section title="Keyboard shortcuts" intro="While watching a video.">
+                <dl class="shortcuts">
+                  {SHORTCUTS.map(([key, action]) => (
+                    <div key={key}>
+                      <dt>
+                        <kbd>{key}</kbd>
+                      </dt>
+                      <dd>{action}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Section>
+            </>
+          )}
 
-      <VideoSites />
+          {page === 'translation' && (
+            <Section
+              title="Translation"
+              intro="Whole lines are translated by YouTube when it can, or taken from a video’s subtitles in your language. This translator handles single words and all other lines."
+            >
+              <div class="choices">
+                <Choice<TranslatorChoice>
+                  name="translator"
+                  value="browser"
+                  current={settings.translator}
+                  onSelect={(translator) => change({ translator })}
+                  title="Built-in browser translator"
+                  description={
+                    browserTranslatorAvailable
+                      ? 'Free and private: runs on your device. Available in this browser.'
+                      : 'Free and private, but not available in this browser (needs Chrome or Edge 138+). Choose another option.'
+                  }
+                />
+                <Choice<TranslatorChoice>
+                  name="translator"
+                  value="libretranslate"
+                  current={settings.translator}
+                  onSelect={(translator) => change({ translator })}
+                  title="LibreTranslate"
+                  description="Open-source translation server you can host yourself."
+                >
+                  <Field label="Server URL" hint="For a local Docker install this is usually http://localhost:5000.">
+                    <input
+                      type="url"
+                      value={settings.libreTranslateUrl}
+                      onInput={(event) => change({ libreTranslateUrl: event.currentTarget.value.trim() })}
+                    />
+                  </Field>
+                  <Field label="API key (optional)">
+                    <input
+                      type="password"
+                      autocomplete="off"
+                      value={secrets.libreTranslateApiKey}
+                      onInput={(event) => changeSecret({ libreTranslateApiKey: event.currentTarget.value.trim() })}
+                    />
+                  </Field>
+                </Choice>
+                <Choice<TranslatorChoice>
+                  name="translator"
+                  value="deepl"
+                  current={settings.translator}
+                  onSelect={(translator) => change({ translator })}
+                  title="DeepL"
+                  description="High-quality translation. The free API plan covers 500,000 characters a month."
+                >
+                  <Field label="DeepL API key">
+                    <input
+                      type="password"
+                      autocomplete="off"
+                      value={secrets.deeplApiKey}
+                      onInput={(event) => changeSecret({ deeplApiKey: event.currentTarget.value.trim() })}
+                    />
+                  </Field>
+                </Choice>
+                <Choice<TranslatorChoice>
+                  name="translator"
+                  value="ai"
+                  current={settings.translator}
+                  onSelect={(translator) => change({ translator })}
+                  title="AI model"
+                  description="Uses the AI model set up below. Good with slang and context, but slower."
+                />
+              </div>
+              <div class="row">
+                <button class="button" onClick={testTranslator} disabled={dirty}>
+                  Test translator
+                </button>
+                {dirty && <span class="muted">Save your changes to test them.</span>}
+                {translatorTest && <span class={translatorTest.kind}>{translatorTest.text}</span>}
+              </div>
+            </Section>
+          )}
 
-      <SavedWords />
+          {page === 'ai' && (
+            <Section
+              title="AI explanations (optional)"
+              intro="Explains a word or line in context: meaning, dictionary form, grammar and idioms. When you ask, the word, its subtitle line and the lines around it go to the model you choose. The first two options keep everything on this computer."
+            >
+              <div class="choices">
+                <Choice<AiProvider>
+                  name="ai"
+                  value="none"
+                  current={settings.ai.provider}
+                  onSelect={(provider) => changeAi({ provider })}
+                  title="Off"
+                  description="Dictionary definitions and translations only."
+                />
+                <Choice<AiProvider>
+                  name="ai"
+                  value="built-in"
+                  current={settings.ai.provider}
+                  onSelect={(provider) => changeAi({ provider })}
+                  title="Built into the browser"
+                  description="Free and private. Chrome’s own model (Gemini Nano) runs on this computer. Best in English, Spanish, Japanese, German and French."
+                >
+                  <BuiltInModelSetup language={settings.nativeLanguage} />
+                </Choice>
+                <Choice<AiProvider>
+                  name="ai"
+                  value="on-device"
+                  current={settings.ai.provider}
+                  onSelect={(provider) => changeAi({ provider })}
+                  title="Glossa’s on-device model"
+                  description="Free and private. Downloads an open model (Qwen3.5) once, then runs it on your graphics card, even offline. Knows many languages."
+                >
+                  <OnDeviceModelSetup value={settings.ai.onDeviceModel} onChange={(onDeviceModel) => changeAi({ onDeviceModel })} />
+                </Choice>
+                <Choice<AiProvider>
+                  name="ai"
+                  value="anthropic"
+                  current={settings.ai.provider}
+                  onSelect={(provider) => changeAi({ provider, model: '' })}
+                  title="Claude (Anthropic)"
+                  description={
+                    <>
+                      Needs an API key from{' '}
+                      <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer noopener">
+                        console.anthropic.com
+                      </a>
+                      . You pay Anthropic per use.
+                    </>
+                  }
+                >
+                  <Field label="Anthropic API key">
+                    <input
+                      type="password"
+                      autocomplete="off"
+                      value={secrets.anthropicApiKey}
+                      onInput={(event) => changeSecret({ anthropicApiKey: event.currentTarget.value.trim() })}
+                    />
+                  </Field>
+                  <Field label="Model" hint={`Leave empty to use ${DEFAULT_ANTHROPIC_MODEL}.`}>
+                    <input
+                      type="text"
+                      placeholder={DEFAULT_ANTHROPIC_MODEL}
+                      value={settings.ai.model}
+                      onInput={(event) => changeAi({ model: event.currentTarget.value.trim() })}
+                    />
+                  </Field>
+                </Choice>
+                <Choice<AiProvider>
+                  name="ai"
+                  value="openai-compatible"
+                  current={settings.ai.provider}
+                  onSelect={(provider) => changeAi({ provider, model: '' })}
+                  title="OpenAI, Gemini, Ollama or another server"
+                  description="Any service or server with an OpenAI-compatible API: hosted (OpenAI, Gemini, Groq, Mistral, OpenRouter…), on your computer, or on your network. Bigger models give better answers."
+                >
+                  <OpenAICompatibleSetup
+                    ai={settings.ai}
+                    apiKey={secrets.openaiCompatibleApiKey}
+                    changeAi={changeAi}
+                    changeApiKey={(openaiCompatibleApiKey) => changeSecret({ openaiCompatibleApiKey })}
+                  />
+                </Choice>
+              </div>
+              {settings.ai.provider !== 'none' && (
+                <div class="row">
+                  <button class="button" onClick={testAi} disabled={dirty}>
+                    Test AI
+                  </button>
+                  {dirty && <span class="muted">Save your changes to test them.</span>}
+                  {aiTest && <span class={`${aiTest.kind} pre`}>{aiTest.text}</span>}
+                </div>
+              )}
+              <p class="muted small">API keys are stored only in this browser and are sent only to the provider they belong to.</p>
+            </Section>
+          )}
+
+          {page === 'packs' && (
+            <Section
+              title="Optional packs"
+              intro="Extra data that isn’t part of Glossa. Nothing is downloaded until you press Install, and it works offline afterwards."
+            >
+              <OptionalPacks />
+              <div class="pack">
+                <label class="switch">
+                  <input type="checkbox" checked={settings.lookAhead} onChange={(event) => change({ lookAhead: event.currentTarget.checked })} />
+                  On YouTube, transcribe ahead from the audio the player has already loaded (experimental)
+                </label>
+              </div>
+              {browser.offscreen && (
+                <ChromeSpeechSetup enabled={settings.chromeSpeech} language={settings.spokenLanguage} onToggle={(on) => change({ chromeSpeech: on })} />
+              )}
+            </Section>
+          )}
+
+          {page === 'sites' && <VideoSites />}
+
+          {page === 'words' && <SavedWords />}
+        </main>
+      </div>
 
       <footer class="page-footer muted small">
         Glossa {version} · Licensed under the GNU AGPL v3 or later · Dictionary data from Wiktionary (CC BY-SA)
@@ -677,7 +744,7 @@ function Options() {
           )}
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
