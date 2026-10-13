@@ -108,6 +108,8 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
   const [message, setMessage] = useState<string | null>(null);
   const tabId = tab.id;
   const language = settings.spokenLanguage || (baseLanguage(settings.nativeLanguage) === 'ja' ? 'en' : 'ja');
+  // Look-ahead reads the audio YouTube's player has buffered, so it needs no tab capture (and a Whisper pack, not Chrome speech).
+  const ahead = settings.lookAhead && isYouTube(tab.url);
 
   useEffect(() => {
     void installedSpeechPack().then((installed) => setPack(installed ?? null));
@@ -132,6 +134,12 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
   const start = async () => {
     setMessage('Starting…');
     try {
+      if (ahead && pack) {
+        if (language !== settings.spokenLanguage) void updateSettings({ spokenLanguage: language });
+        await sendMessage('asrStart', { tabId, language, pack: pack.id });
+        window.close();
+        return;
+      }
       const permission = { permissions: ['tabCapture'] as Browser.runtime.ManifestPermission[] };
       if (!(await browser.permissions.contains(permission)) && !(await browser.permissions.request(permission))) {
         setMessage('Glossa needs permission to listen to this tab’s audio.');
@@ -173,7 +181,11 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
           <button class="button primary popup-wide" onClick={() => void start()}>
             Transcribe this video’s audio
           </button>
-          <p class="popup-hint muted">On this device. Lines appear a few seconds after they’re spoken.</p>
+          <p class="popup-hint muted">
+            {ahead
+              ? 'On this device, from the audio YouTube has already loaded, so lines can be ready before they’re spoken.'
+              : 'On this device. Lines appear a few seconds after they’re spoken.'}
+          </p>
         </>
       )}
       {message && <p class="popup-hint muted">{message}</p>}
