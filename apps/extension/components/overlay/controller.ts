@@ -9,6 +9,7 @@ import {
   findBestOverlap,
   findCueIndexAtOrBefore,
   isBrowserTranslatorSupported,
+  LiveLine,
   languageFromFileName,
   languageName,
   parseTextSubtitles,
@@ -31,6 +32,8 @@ import type { CardAnchor, CardState, LineTranslation, OverlayState, TrackOption 
 
 /** `TrackOption.key` of the lines recognised from the video's audio. */
 export const TRANSCRIPT_KEY = 'transcript';
+/** The `cueIndex` and `lineTranslations` key of the line still being recognised, which isn't in the track yet. */
+export const LIVE_INDEX = -2;
 /** How often the video's position is sampled to place recognised lines on its timeline. */
 const CLOCK_INTERVAL_MS = 250;
 
@@ -81,6 +84,11 @@ export abstract class SubtitleController {
   /** Lines recognised from the video's audio so far; the track is `transcript`. */
   protected transcript: SubtitleTrack | null = null;
   private transcribing = false;
+  private liveLine: LiveLine | null = null;
+  /** The settled text last sent to the translator, so each growth of it is translated once. */
+  private liveTranslated = '';
+  /** Changes with each live translation request and when the live line ends, so stale replies are dropped. */
+  private liveGeneration = 0;
   private readonly clock = new MediaClock();
   private lastClockSample = 0;
 
@@ -172,6 +180,51 @@ export abstract class SubtitleController {
     if (this.transcribing) void sendMessage('asrStop', null).catch(() => {});
     this.transcribing = false;
     this.transcript = null;
+    this.endLiveLine();
+  }
+
+  /** Drops the line being recognised, e.g. because its final text arrived. */
+  private endLiveLine(): void {
+    this.liveLine = null;
+    this.liveTranslated = '';
+    this.liveGeneration++;
+    if (this.store.get().live) {
+      this.store.set((state) => {
+        const next = new Map(state.lineTranslations);
+        next.delete(LIVE_INDEX);
+        return { live: undefined, lineTranslations: next };
+      });
+    }
+  }
+
+  /** A fresh guess at the line being spoken: settled words become clickable, and only they get translated. */
+  private onPartialText(text: string): void {
+    const { trackKey, track } = this.store.get();
+    if (trackKey !== TRANSCRIPT_KEY || !track) return;
+    const line = (this.liveLine ??= new LiveLine(track.lang));
+    const { settled, translatable } = line.update(text);
+    this.store.set({ live: { cue: { start: 0, end: 0, text }, settledLength: settled.length } });
+    if (translatable && translatable !== this.liveTranslated) {
+      this.liveTranslated = translatable;
+      this.translateLive(translatable);
+    }
+  }
+
+  private translateLive(text: string): void {
+    const { track, settings } = this.store.get();
+    if (!track || settings.translationDisplay === 'hide' || baseLanguage(track.lang) === baseLanguage(settings.nativeLanguage)) return;
+    const generation = ++this.liveGeneration;
+    // The previous translation stays on screen until this one arrives, so the line doesn't flicker.
+    this.translate(text, track.lang).then(
+      (value) => this.liveGeneration === generation && this.setLineTranslation(LIVE_INDEX, { state: 'done', value }),
+      (error: unknown) =>
+        this.liveGeneration === generation && this.setLineTranslation(LIVE_INDEX, { state: 'error', message: errorMessage(error) }),
+    );
+  }
+
+  /** A cue of the track, or the line being recognised. */
+  private cueAt(index: number): Cue | undefined {
+    return index === LIVE_INDEX ? this.store.get().live?.cue : this.store.get().track?.cues[index];
   }
 
   private onAsrEvent(event: AsrEvent): void {
@@ -191,6 +244,7 @@ export abstract class SubtitleController {
       }
       case 'lines': {
         if (!this.transcript) break;
+        this.endLiveLine();
         const added = placeSpokenLines(event.lines, this.clock);
         const cues = addTranscribedCues(this.transcript.cues, added);
         this.transcript = { ...this.transcript, cues };
@@ -200,12 +254,17 @@ export abstract class SubtitleController {
         }
         break;
       }
+      case 'partial':
+        this.onPartialText(event.text);
+        break;
       case 'error':
         this.transcribing = false;
+        this.endLiveLine();
         this.store.set({ status: 'error', error: event.message, notice: undefined });
         break;
       case 'stopped':
         this.transcribing = false;
+        this.endLiveLine();
         this.store.set({ notice: undefined });
         break;
     }
@@ -459,7 +518,8 @@ export abstract class SubtitleController {
   translateLineNow(index: number): void {
     const { track } = this.store.get();
     const cue = track?.cues[index];
-    if (track && cue) this.translateLine(index, track.lang, cue);
+    if (index === LIVE_INDEX) this.translateLive(this.liveTranslated);
+    else if (track && cue) this.translateLine(index, track.lang, cue);
   }
 
   private translateLine(index: number, lang: string, cue: Cue): void {
@@ -499,7 +559,7 @@ export abstract class SubtitleController {
 
   openWordCard(word: string, cueIndex: number, anchor: CardAnchor): void {
     const { track, settings } = this.store.get();
-    const cue = track?.cues[cueIndex];
+    const cue = this.cueAt(cueIndex);
     if (!track || !cue) return;
 
     this.pauseForCard();

@@ -19,6 +19,8 @@ export type AsrEvent =
   | { kind: 'loading'; message: string }
   | { kind: 'listening'; language: string }
   | { kind: 'lines'; lines: SpokenLine[] }
+  /** The current best guess for the line being spoken; it may change with the next update. */
+  | { kind: 'partial'; text: string }
   | { kind: 'error'; message: string }
   | { kind: 'stopped' };
 
