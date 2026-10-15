@@ -43,8 +43,10 @@ export interface Settings {
   autoPause: boolean;
   /** Underline words that are neither saved nor marked as known, so new ones stand out. */
   markNewWords: boolean;
-  /** Furigana over kanji, from the Japanese readings pack. */
+  /** Readings over the line: pinyin for Chinese, furigana or romaji (from the Japanese readings pack) for Japanese. */
   showReadings: boolean;
+  /** How Japanese readings are written: kana over the kanji, or romaji over each word. */
+  japaneseReadings: 'kana' | 'romaji';
   fontScale: number;
   /** How far the subtitles are raised from their usual spot at the bottom, in percent of the video's height. */
   subtitlePosition: number;
@@ -81,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoPause: false,
   markNewWords: false,
   showReadings: false,
+  japaneseReadings: 'kana',
   fontScale: 1,
   subtitlePosition: 0,
 };

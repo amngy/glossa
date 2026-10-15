@@ -490,15 +490,24 @@ function Options() {
                     onChange={(event) => change({ showReadings: event.currentTarget.checked })}
                   />
                   <span>
-                    Readings over characters: pinyin (Chinese), furigana (Japanese)
+                    Readings over characters: pinyin (Chinese), furigana or romaji (Japanese)
                     {!readingsInstalled && (
                       <span class="muted">
                         {' '}
-                        · furigana needs the <a href="#packs">Japanese readings pack</a>
+                        · Japanese needs the <a href="#packs">Japanese readings pack</a>
                       </span>
                     )}
                   </span>
                 </label>
+                <Field label="Japanese readings">
+                  <select
+                    value={settings.japaneseReadings}
+                    onChange={(event) => change({ japaneseReadings: event.currentTarget.value as Settings['japaneseReadings'] })}
+                  >
+                    <option value="kana">Furigana: kana over the kanji</option>
+                    <option value="romaji">Romaji over each word</option>
+                  </select>
+                </Field>
               </Section>
 
               <Section title="Behaviour">

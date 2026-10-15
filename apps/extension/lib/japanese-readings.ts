@@ -43,5 +43,6 @@ export async function japaneseReadings(text: string): Promise<ReadingToken[]> {
   return built.tokenize(text).map((token) => ({
     surface: token.surface_form,
     reading: token.reading && token.reading !== '*' ? token.reading : undefined,
+    pronunciation: token.pronunciation && token.pronunciation !== '*' ? token.pronunciation : undefined,
   }));
 }
