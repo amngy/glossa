@@ -259,7 +259,11 @@ pack in the same place to free the space. Packs are data only; the extension nev
 
 For videos with no subtitles at all. Install a speech pack in Settings → Optional packs, open the video,
 click Glossa's toolbar button, pick the language being spoken and press **Transcribe this video's audio**.
-Glossa asks once for permission to listen to tab audio. The video keeps playing as usual.
+Glossa asks once for permission to listen to tab audio. The video keeps playing as usual. That one button
+also starts Glossa on the page, and Glossa remembers the spoken language for each site. After the first
+time, <kbd>Alt</kbd>+<kbd>T</kbd> starts or stops it without the popup (change the key at
+`chrome://extensions/shortcuts`). The browser only lets Glossa listen after a click or a shortcut, so it
+never starts listening by itself.
 
 - **On your device.** The tab's audio goes to Whisper running as WebAssembly on your CPU. Nothing is sent
   anywhere, and the audio isn't saved. Only the lines of text are kept, for as long as the page is open.
