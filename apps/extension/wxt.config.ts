@@ -25,6 +25,10 @@ export default defineConfig({
     ...(browser === 'firefox' ? {} : { optional_permissions: ['tabCapture', 'nativeMessaging'] }),
     // Pins the extension ID, which the companion's native messaging manifest names. Public key, not a secret.
     ...(browser === 'firefox' ? {} : { key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwHSIT9F2buxoRSXiy3Hzs1FKeBsdoXTT1/pK94rWaGQC1XCpSO0HpVVWB5SaFSR/wERPp725dv/ZWNYHPXGjCQZs4zENHdnPCSInRaQGsJ/5n2K5o2+j6YA+bJoybgnWmONsUmWTUbp8yn9QC6+CqI6DEDXaF0EL9IMMYgM6H9b6Ral564pOjwZZvfYgQPlHveIDQWpll9FMc1HJkSGTfYkvN4vmVQHeI0RhWq+lugUTfzKRv+rnDK4I1TAWhI+u5jUY2U9gbnBZkQIT+tbbgrHhV69c6aXQBFW/xGhdsVLpw5TqCvPh3wHNZGpFPpu+biNvbnAUpMdm7K5Gysy2SwIDAQAB' }),
+    // A keyboard shortcut counts as the viewer's request, which tab capture needs (see entrypoints/background.ts).
+    ...(browser === 'firefox'
+      ? {}
+      : { commands: { transcribe: { suggested_key: { default: 'Alt+T' }, description: 'Transcribe this tab’s audio, or stop' } } }),
     // The on-device models run as WebAssembly.
     content_security_policy: {
       extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';",

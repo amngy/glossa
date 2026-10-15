@@ -1,12 +1,13 @@
 import { browser, defineBackground } from '#imports';
 import { COMPANION_HOST, decodePcm, LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
 import { COMPANION_STREAM, CompanionSpeechModel, type CompanionStreamMessage } from '@/lib/companion';
-import { isAsrEnvelope } from '@/lib/asr';
-import { handleMessages } from '@/lib/messages';
+import { isAsrEnvelope, type AsrEnvelope } from '@/lib/asr';
+import { handleMessages, type MessageMap } from '@/lib/messages';
 import { askOffscreen } from '@/lib/on-device-client';
 import { createChatModel, createTranslator, describeNetworkError } from '@/lib/providers';
 import { syncServerRules } from '@/lib/server-rules';
 import { getSettings, updateSettings, watchSettings } from '@/lib/settings';
+import { spokenLanguageFor, startTranscribing, TAB_CAPTURE, usesLookAhead } from '@/lib/transcribe';
 import { syncVideoSites, watchVideoSites } from '@/lib/video-sites';
 
 export default defineBackground(() => {
@@ -45,6 +46,23 @@ export default defineBackground(() => {
     await updateSettings(await getSettings());
     await browser.runtime.openOptionsPage();
   });
+
+  async function asrStart({ tabId, streamId, language, pack }: MessageMap['asrStart']['request']): Promise<null> {
+    let notice: string | undefined;
+    // Audio goes to the companion if it answers (tab audio only if it has a live engine); otherwise to the pack.
+    if ((await getSettings()).companion) {
+      try {
+        const { live } = await companion.ping();
+        if (streamId && !live) throw new Error('No live engine.');
+        pack = COMPANION_HOST;
+      } catch {
+        if (!pack) throw new Error('The desktop companion can’t take this audio and no speech pack is installed. See Settings → Optional packs.');
+        notice = 'The desktop companion can’t take this audio, so the speech pack is used. Loading it…';
+      }
+    }
+    await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack, notice });
+    return null;
+  }
 
   handleMessages({
     async translate(request) {
@@ -109,22 +127,7 @@ export default defineBackground(() => {
 
     readings: ({ text }) => cached(`r|${text}`, () => askOffscreen({ type: 'readings', text })),
 
-    async asrStart({ tabId, streamId, language, pack }) {
-      let notice: string | undefined;
-      // Audio goes to the companion if it answers (tab audio only if it has a live engine); otherwise to the pack.
-      if ((await getSettings()).companion) {
-        try {
-          const { live } = await companion.ping();
-          if (streamId && !live) throw new Error('No live engine.');
-          pack = COMPANION_HOST;
-        } catch {
-          if (!pack) throw new Error('The desktop companion can’t take this audio and no speech pack is installed. See Settings → Optional packs.');
-          notice = 'The desktop companion can’t take this audio, so the speech pack is used. Loading it…';
-        }
-      }
-      await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack, notice });
-      return null;
-    },
+    asrStart,
     async asrStop() {
       await askOffscreen({ type: 'asr-stop' });
       return null;
@@ -133,6 +136,20 @@ export default defineBackground(() => {
     // Native messaging is only open to extension pages and this worker, not the offscreen document.
     companionTranscribe: ({ pcm, language }) => companion.transcribe(decodePcm(pcm), { language }),
     asrStatus: async () => ({ tabId: asrTab }),
+  });
+
+  // The shortcut starts or stops transcribing the current tab, like the popup's button.
+  browser.commands?.onCommand.addListener(async (command, tab) => {
+    if (command !== 'transcribe' || tab?.id === undefined) return;
+    if (asrTab === tab.id) return void askOffscreen({ type: 'asr-stop' }).catch(() => {});
+    const settings = await getSettings();
+    // Without the audio permission, the popup asks for it (a shortcut can't).
+    if (!usesLookAhead(tab, settings) && !(await browser.permissions.contains(TAB_CAPTURE))) return void browser.action.openPopup().catch(() => {});
+    const tabId = tab.id;
+    startTranscribing(tab, settings, await spokenLanguageFor(tab.url, settings), asrStart).catch((error: unknown) => {
+      const event = { kind: 'error', message: error instanceof Error ? error.message : String(error) } as const;
+      void browser.tabs.sendMessage(tabId, { glossaAsr: true, tabId, event } satisfies AsrEnvelope).catch(() => {});
+    });
   });
 
   // The stream follows the tab to its next page, so stop listening when the tab leaves the video.

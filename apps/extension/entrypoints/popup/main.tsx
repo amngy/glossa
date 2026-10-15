@@ -3,12 +3,12 @@ import './style.css';
 import { browser, type Browser } from '#imports';
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { baseLanguage } from '@glossa/core';
 import { languageOptions } from '@/lib/languages';
 import { sendMessage } from '@/lib/messages';
 import { CHROME_SPEECH } from '@/lib/chrome-speech';
 import { installedSpeechPack, type Pack } from '@/lib/packs';
 import { getSettings, updateSettings, watchSettings, type Settings } from '@/lib/settings';
+import { isYouTube, rememberSpokenLanguage, spokenLanguageFor, startTranscribing, TAB_CAPTURE, usesLookAhead } from '@/lib/transcribe';
 import {
   addVideoSite,
   grantedVideoSites,
@@ -33,14 +33,6 @@ const AI_NAMES: Record<Settings['ai']['provider'], string> = {
   anthropic: 'Claude',
   'openai-compatible': 'Your own server',
 };
-
-function isYouTube(url: string | undefined): boolean {
-  try {
-    return !!url && /(^|\.)youtube\.com$/.test(new URL(url).hostname);
-  } catch {
-    return false;
-  }
-}
 
 /** Starts subtitles for the video on the current page, and turns them on for the whole site. */
 function PageVideo({ tab }: { tab: Browser.tabs.Tab }) {
@@ -106,17 +98,18 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
   const [pack, setPack] = useState<Pack | null | undefined>(undefined);
   const [active, setActive] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [language, setLanguage] = useState<string | null>(null);
   const tabId = tab.id;
-  const language = settings.spokenLanguage || (baseLanguage(settings.nativeLanguage) === 'ja' ? 'en' : 'ja');
-  // Look-ahead reads the audio YouTube's player has buffered, so it needs no tab capture (and a Whisper pack, not Chrome speech).
-  const ahead = settings.lookAhead && isYouTube(tab.url);
+  // Look-ahead needs a Whisper pack or the companion, not Chrome speech.
+  const ahead = usesLookAhead(tab, settings);
 
   useEffect(() => {
     void installedSpeechPack().then((installed) => setPack(installed ?? null));
+    void spokenLanguageFor(tab.url, settings).then(setLanguage);
     void sendMessage('asrStatus', null).then(({ tabId: current }) => setActive(current === tabId), () => {});
   }, [tabId]);
 
-  if (tabId === undefined || pack === undefined) return null;
+  if (tabId === undefined || pack === undefined || language === null) return null;
 
   const engine = settings.chromeSpeech ? CHROME_SPEECH : pack?.id;
   // The background worker sends the audio to the desktop companion if it answers, otherwise to `engine`.
@@ -136,22 +129,11 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
   const start = async () => {
     setMessage('Starting…');
     try {
-      if (aheadReady) {
-        if (language !== settings.spokenLanguage) void updateSettings({ spokenLanguage: language });
-        await sendMessage('asrStart', { tabId, language, pack: pack?.id ?? '' });
-        window.close();
-        return;
-      }
-      const permission = { permissions: ['tabCapture'] as Browser.runtime.ManifestPermission[] };
-      if (!(await browser.permissions.contains(permission)) && !(await browser.permissions.request(permission))) {
+      if (!aheadReady && !(await browser.permissions.contains(TAB_CAPTURE)) && !(await browser.permissions.request(TAB_CAPTURE))) {
         setMessage('Glossa needs permission to listen to this tab’s audio.');
         return;
       }
-      const streamId = await browser.tabCapture.getMediaStreamId({ targetTabId: tabId });
-      // Other sites need Glossa's overlay started first; YouTube's is always there.
-      if (!isYouTube(tab.url)) await startOnTab(tabId);
-      if (language !== settings.spokenLanguage) void updateSettings({ spokenLanguage: language });
-      await sendMessage('asrStart', { tabId, streamId, language, pack: engine ?? '' });
+      await startTranscribing(tab, settings, language);
       window.close();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
@@ -172,7 +154,13 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
         <>
           <label class="popup-field">
             <span>Spoken language</span>
-            <select value={language} onChange={(event) => void updateSettings({ spokenLanguage: event.currentTarget.value })}>
+            <select
+              value={language}
+              onChange={(event) => {
+                setLanguage(event.currentTarget.value);
+                void rememberSpokenLanguage(tab.url, event.currentTarget.value);
+              }}
+            >
               {languageOptions(language).map((option) => (
                 <option key={option.code} value={option.code}>
                   {option.label}
@@ -186,7 +174,8 @@ function Transcribe({ tab, settings }: { tab: Browser.tabs.Tab; settings: Settin
           <p class="popup-hint muted">
             {ahead
               ? 'On this device, from the audio YouTube has already loaded, so lines can be ready before they’re spoken.'
-              : 'On this device. Lines appear a few seconds after they’re spoken.'}
+              : 'On this device. Starts Glossa on the page too.'}{' '}
+            Shortcut: <kbd>Alt</kbd> <kbd>T</kbd>.
           </p>
         </>
       )}
