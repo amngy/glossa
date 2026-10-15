@@ -2,7 +2,10 @@ import { browser, type ContentScriptContext } from '#imports';
 import {
   addTranscribedCues,
   BrowserTranslator,
+  endsSentence,
   HeardSpans,
+  joinSentences,
+  joinText,
   MediaClock,
   placeSpokenLines,
   baseLanguage,
@@ -44,6 +47,10 @@ const REPLAY_MARGIN = 1;
 const TRANSLATION_DISPLAY_ORDER: TranslationDisplay[] = ['show', 'blur', 'hide'];
 /** While paused, keep showing a line this many seconds after it ends. */
 const LINGER_SECONDS = 2;
+/** Recognised lines arrive after they're spoken, so the last one stays up this long, until the next is heard. */
+const TRANSCRIPT_LINGER_SECONDS = 4;
+/** A live line this soon after an unfinished one continues its sentence. */
+const SENTENCE_GAP = 1.5;
 /** Auto-pause fires this many seconds before a line ends, so the last word isn't cut off by the next line. */
 const AUTO_PAUSE_LEAD = 0.15;
 /** How long the mouse can be off the subtitles (say, crossing to the toolbar) before they count as left. */
@@ -85,8 +92,10 @@ export abstract class SubtitleController {
   private resumeAfterCard = false;
   private cardSequence = 0;
   private readonly browserTranslator = new BrowserTranslator();
-  /** Lines recognised from the video's audio so far; the track is `transcript`. */
+  /** Lines recognised from the video's audio so far, joined into sentences; the track is `transcript`. */
   protected transcript: SubtitleTrack | null = null;
+  /** The recognised lines as the engine cut them, at pauses. */
+  private spoken: Cue[] = [];
   protected transcribing = false;
   private liveLine: LiveLine | null = null;
   /** The settled text last sent to the translator, so each growth of it is translated once. */
@@ -188,6 +197,7 @@ export abstract class SubtitleController {
     if (this.transcribing) void sendMessage('asrStop', null).catch(() => {});
     this.transcribing = false;
     this.transcript = null;
+    this.spoken = [];
     this.heard.clear();
     this.replaying = false;
     this.endLiveLine();
@@ -212,12 +222,26 @@ export abstract class SubtitleController {
     const { trackKey, track } = this.store.get();
     if (trackKey !== TRANSCRIPT_KEY || !track) return;
     const line = (this.liveLine ??= new LiveLine(track.lang));
-    const { settled, translatable } = line.update(text);
-    this.store.set({ live: { cue: { start: 0, end: 0, text }, settledLength: settled.length } });
-    if (translatable && translatable !== this.liveTranslated) {
-      this.liveTranslated = translatable;
-      this.translateLive(translatable);
+    const spoken = text.trim();
+    const { settled, translatable } = line.update(spoken);
+    // Fast speech is cut mid-sentence: the line then shows and translates the sentence so far.
+    const before = this.openSentence();
+    const shown = joinText(before, spoken);
+    const offset = shown.length - spoken.length;
+    this.store.set({ live: { cue: { start: 0, end: 0, text: shown }, settledLength: offset + settled.length } });
+    const whole = translatable && joinText(before, translatable);
+    if (whole && whole !== this.liveTranslated) {
+      this.liveTranslated = whole;
+      this.translateLive(whole);
     }
+  }
+
+  /** The last recognised line, if it ended just now without finishing its sentence. */
+  private openSentence(): string {
+    const last = this.transcript?.cues.at(-1);
+    const time = this.video?.currentTime;
+    if (!last || time === undefined || endsSentence(last.text) || time - last.end > SENTENCE_GAP) return '';
+    return last.text;
   }
 
   private translateLive(text: string): void {
@@ -225,7 +249,11 @@ export abstract class SubtitleController {
     if (!track || settings.translationDisplay === 'hide' || baseLanguage(track.lang) === baseLanguage(settings.nativeLanguage)) return;
     const generation = ++this.liveGeneration;
     // The previous translation stays on screen until this one arrives, so the line doesn't flicker.
-    this.translate(text, track.lang).then(
+    // The lines before it, without the unfinished one that `text` already starts with.
+    const earlier = this.openSentence() ? track.cues.slice(0, -1) : track.cues;
+    const now = this.video?.currentTime ?? 0;
+    const context = subtitleContext([...earlier, { start: now, end: now, text }], earlier.length, { after: 0 });
+    this.translate(text, track.lang, { context }).then(
       (value) => this.liveGeneration === generation && this.setLineTranslation(LIVE_INDEX, { state: 'done', value }),
       (error: unknown) =>
         this.liveGeneration === generation && this.setLineTranslation(LIVE_INDEX, { state: 'error', message: errorMessage(error) }),
@@ -257,7 +285,8 @@ export abstract class SubtitleController {
         if (!this.transcript) break;
         this.endLiveLine();
         const added = event.kind === 'cues' ? event.cues : placeSpokenLines(event.lines, this.clock);
-        const cues = addTranscribedCues(this.transcript.cues, added);
+        this.spoken = addTranscribedCues(this.spoken, added);
+        const cues = joinSentences(this.spoken);
         this.transcript = { ...this.transcript, cues };
         if (this.store.get().trackKey === TRANSCRIPT_KEY) {
           this.extendTrack(cues);
@@ -334,10 +363,18 @@ export abstract class SubtitleController {
     const { track } = this.store.get();
     if (!track) return;
     const old = track.cues;
-    const appended =
-      cues.length >= old.length && old.every((cue, i) => cues[i]!.start === cue.start && cues[i]!.text === cue.text);
-    if (appended) this.store.set({ track: { ...track, cues }, status: cues.length > 0 ? 'ready' : 'no-subtitles' });
-    else this.setTrack({ ...track, cues }, { translationTrack: this.store.get().translationTrack });
+    const same = (i: number) => cues[i]?.start === old[i]!.start && cues[i]?.text === old[i]!.text;
+    let kept = 0;
+    while (kept < old.length && same(kept)) kept++;
+    // New lines at the end, or the last line grew (a sentence went on): what's translated before it stays.
+    if (cues.length >= old.length && kept >= old.length - 1) {
+      this.store.set((state) => ({
+        track: { ...track, cues },
+        status: cues.length > 0 ? 'ready' : 'no-subtitles',
+        lineTranslations: new Map([...state.lineTranslations].filter(([index]) => index < kept || index === LIVE_INDEX)),
+      }));
+      if (kept < old.length) this.translateAround(this.store.get().displayIndex);
+    } else this.setTrack({ ...track, cues }, { translationTrack: this.store.get().translationTrack });
   }
 
   /** Translates the line on screen and the next one, if needed. */
@@ -371,9 +408,10 @@ export abstract class SubtitleController {
       const active = findActiveCueIndex(cues, time);
 
       let display = active;
-      if (display === -1 && video.paused) {
+      const linger = video.paused ? LINGER_SECONDS : state.trackKey === TRANSCRIPT_KEY && this.transcribing ? TRANSCRIPT_LINGER_SECONDS : 0;
+      if (display === -1 && linger > 0) {
         const previous = findCueIndexAtOrBefore(cues, time);
-        if (previous !== -1 && time - cues[previous]!.end < LINGER_SECONDS) display = previous;
+        if (previous !== -1 && time - cues[previous]!.end < linger) display = previous;
       }
 
       const paused = this.autoPausedIndex;
@@ -547,12 +585,14 @@ export abstract class SubtitleController {
     const generation = this.trackGeneration;
     const cues = this.store.get().track?.cues ?? [];
     this.setLineTranslation(index, { state: 'loading' });
+    // A line can still grow into a longer sentence; a reply for its old text is dropped.
+    const current = () => this.trackGeneration === generation && this.store.get().track?.cues[index]?.text === cue.text;
     this.translate(cue.text, lang, { context: subtitleContext(cues, index) }).then(
       (value) => {
-        if (this.trackGeneration === generation) this.setLineTranslation(index, { state: 'done', value });
+        if (current()) this.setLineTranslation(index, { state: 'done', value });
       },
       (error: unknown) => {
-        if (this.trackGeneration === generation) {
+        if (current()) {
           this.setLineTranslation(index, { state: 'error', message: errorMessage(error) });
         }
       },
