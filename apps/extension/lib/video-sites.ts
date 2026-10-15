@@ -20,6 +20,12 @@ const HOOKS: Record<string, { id: string; file: ScriptPublicPath }> = {
   'https://web.stremio.com/*': { id: 'glossa-stremio-hook', file: '/content-scripts/stremio-hook.js' },
   'https://www.crunchyroll.com/*': { id: 'glossa-crunchyroll-hook', file: '/content-scripts/crunchyroll-hook.js' },
   'https://www.netflix.com/*': { id: 'glossa-netflix-hook', file: '/content-scripts/netflix-hook.js' },
+  // shortcut: Prime Video's main hosts only; add other Amazon stores when someone asks.
+  'https://www.primevideo.com/*': { id: 'glossa-prime-video-hook-primevideo-com', file: '/content-scripts/prime-video-hook.js' },
+  'https://www.amazon.com/*': { id: 'glossa-prime-video-hook-amazon-com', file: '/content-scripts/prime-video-hook.js' },
+  'https://www.amazon.co.uk/*': { id: 'glossa-prime-video-hook-amazon-co-uk', file: '/content-scripts/prime-video-hook.js' },
+  'https://www.amazon.de/*': { id: 'glossa-prime-video-hook-amazon-de', file: '/content-scripts/prime-video-hook.js' },
+  'https://www.amazon.co.jp/*': { id: 'glossa-prime-video-hook-amazon-co-jp', file: '/content-scripts/prime-video-hook.js' },
 };
 
 export function getVideoSites(): Promise<string[]> {

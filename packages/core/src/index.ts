@@ -2,6 +2,8 @@ export * from './subtitles/types';
 export { cleanCueText, decodeEntities, stripTags } from './subtitles/clean';
 export { parseTextSubtitles, parseTimestamp } from './subtitles/parse-text';
 export { parseAssSubtitles } from './subtitles/parse-ass';
+export { parseTtmlSubtitles } from './subtitles/parse-ttml';
+export { primeVideoSubtitles, type PrimeVideoSubtitle } from './subtitles/prime-video';
 export { addNetflixWebVtt, netflixTextTracks, type NetflixTextTrack } from './subtitles/netflix';
 export { parseYouTubeJson3 } from './subtitles/parse-youtube';
 export { mergeOverlappingCues } from './subtitles/overlaps';

@@ -18,6 +18,7 @@ import {
   languageName,
   parseAssSubtitles,
   parseTextSubtitles,
+  parseTtmlSubtitles,
   romajiSpans,
   rubySpans,
   subtitleContext,
@@ -187,13 +188,17 @@ export abstract class SubtitleController {
     let cues: Cue[];
     try {
       const text = await file.text();
-      cues = /\.(ass|ssa)$/i.test(file.name) ? parseAssSubtitles(text) : parseTextSubtitles(text);
+      cues = /\.(ass|ssa)$/i.test(file.name)
+        ? parseAssSubtitles(text)
+        : /\.(ttml|dfxp|xml)$/i.test(file.name)
+          ? parseTtmlSubtitles(text)
+          : parseTextSubtitles(text);
     } catch (error) {
       this.store.set({ status: 'error', error: `Couldn’t read ${file.name}: ${errorMessage(error)}` });
       return null;
     }
     if (cues.length === 0) {
-      this.store.set({ status: 'error', error: `No subtitles found in ${file.name}. Glossa reads .srt, .vtt and .ass files.` });
+      this.store.set({ status: 'error', error: `No subtitles found in ${file.name}. Glossa reads .srt, .vtt, .ass and .ttml files.` });
       return null;
     }
     const lang =
