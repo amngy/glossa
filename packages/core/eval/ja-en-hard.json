@@ -1,0 +1,424 @@
+{
+  "from": "ja",
+  "to": "en",
+  "lines": [
+    {
+      "id": "subject-from-context-she",
+      "before": [
+        "昨日、彼女と喧嘩しちゃってさ。"
+      ],
+      "text": "まだ口をきいてくれないんだ。",
+      "good": [
+        "she (still )?(won't|isn't|hasn't|doesn't|will not|is not)",
+        "she('s| is) (still )?not",
+        "silent treatment"
+      ],
+      "bad": [
+        "\\bhe\\b",
+        "\\bmouth\\b"
+      ]
+    },
+    {
+      "id": "sumimasen-thanks",
+      "before": [
+        "その荷物、持ちましょうか？"
+      ],
+      "text": "すみません、助かります。",
+      "good": [
+        "thank",
+        "appreciate",
+        "lifesaver",
+        "big help",
+        "helps a lot",
+        "that helps"
+      ],
+      "bad": [
+        "i'm sorry",
+        "excuse me"
+      ]
+    },
+    {
+      "id": "wake-ni-wa-ikanai",
+      "text": "ここで諦めるわけにはいかない。",
+      "good": [
+        "can't (just )?give up",
+        "cannot (just )?give up",
+        "can't (just )?quit",
+        "won't give up",
+        "not going to give up"
+      ],
+      "bad": []
+    },
+    {
+      "id": "zaru-wo-enai",
+      "before": [
+        "部長に呼ばれたら、"
+      ],
+      "text": "行かざるを得ないよな。",
+      "good": [
+        "have to go",
+        "have no choice",
+        "got to go",
+        "gotta go",
+        "must go",
+        "no choice but"
+      ],
+      "bad": [
+        "don't (have to|need to) go",
+        "can't go"
+      ]
+    },
+    {
+      "id": "monoka-resolve",
+      "text": "こんなところで負けるものか！",
+      "good": [
+        "no way (i'm|i will|i'll|am i)",
+        "won't lose",
+        "not going to lose",
+        "will not lose",
+        "not losing",
+        "refuse to lose",
+        "can't lose",
+        "won't let"
+      ],
+      "bad": [
+        "i lost",
+        "we lost"
+      ]
+    },
+    {
+      "id": "kke-recall",
+      "text": "あれ、明日って休みだっけ？",
+      "good": [
+        "off tomorrow",
+        "day off",
+        "holiday",
+        "no (school|work) tomorrow"
+      ],
+      "bad": [
+        "rest tomorrow"
+      ]
+    },
+    {
+      "id": "idiom-kao-ga-hiroi",
+      "text": "あの人は顔が広いから、聞いてみたら？",
+      "good": [
+        "knows (a lot of|lots of|many|everyone|everybody)",
+        "well[- ]connected",
+        "connections",
+        "network"
+      ],
+      "bad": [
+        "wide face",
+        "big face",
+        "face is"
+      ]
+    },
+    {
+      "id": "idiom-kuchi-ga-karui",
+      "text": "あいつは口が軽いから、言わない方がいいよ。",
+      "good": [
+        "can't keep (a )?secret",
+        "big mouth",
+        "blab",
+        "loose[- ]lipped",
+        "gossip",
+        "tells everyone",
+        "spill",
+        "loose tongue"
+      ],
+      "bad": [
+        "light mouth",
+        "mouth is light"
+      ]
+    },
+    {
+      "id": "idiom-mimi-ga-itai",
+      "before": [
+        "もっと早く準備しないとダメだよ。"
+      ],
+      "text": "それを言われると耳が痛い。",
+      "good": [
+        "hits (close to )?home",
+        "hurts to hear",
+        "hard to hear",
+        "stings",
+        "touché",
+        "point taken",
+        "guilty",
+        "ouch",
+        "sting",
+        "painful to hear",
+        "painful thing to hear",
+        "hard truth",
+        "close to home"
+      ],
+      "bad": [
+        "ears hurt",
+        "my ears"
+      ]
+    },
+    {
+      "id": "idiom-me-ga-nai",
+      "text": "私、甘いものに目がないの。",
+      "good": [
+        "weakness for",
+        "sweet tooth",
+        "love sweets",
+        "can't resist",
+        "crazy about",
+        "addicted",
+        "can't get enough",
+        "really into"
+      ],
+      "bad": [
+        "no eyes",
+        "can't see",
+        "blind"
+      ]
+    },
+    {
+      "id": "idiom-te-ga-hanasenai",
+      "before": [
+        "ちょっと手伝ってくれる？"
+      ],
+      "text": "ごめん、今手が離せないんだ。",
+      "good": [
+        "busy",
+        "tied up",
+        "can't get away",
+        "in the middle of",
+        "hands are full",
+        "can't step away",
+        "can't leave"
+      ],
+      "bad": [
+        "let go of my hand",
+        "release"
+      ]
+    },
+    {
+      "id": "kansai-akan",
+      "text": "そんなんしたらあかんで。",
+      "good": [
+        "shouldn't",
+        "should not",
+        "can't do",
+        "mustn't",
+        "don't do",
+        "not allowed",
+        "no good",
+        "not okay",
+        "won't do"
+      ],
+      "bad": []
+    },
+    {
+      "id": "kansai-honma",
+      "before": [
+        "昨日、宝くじが当たったんだ。"
+      ],
+      "text": "ほんまに？すごいやん！",
+      "good": [
+        "really",
+        "seriously",
+        "for real",
+        "no way"
+      ],
+      "bad": []
+    },
+    {
+      "id": "sarcasm-sasuga",
+      "before": [
+        "また寝坊して遅刻しちゃった。"
+      ],
+      "text": "はいはい、さすがですね。",
+      "good": [
+        "of course",
+        "typical",
+        "classic",
+        "as expected",
+        "naturally",
+        "figures",
+        "impressive",
+        "way to go",
+        "nice going",
+        "good job",
+        "bravo",
+        "something else",
+        "just perfect",
+        "yeah,? yeah",
+        "as ever",
+        "predictable"
+      ],
+      "bad": []
+    },
+    {
+      "id": "keigo-omie",
+      "text": "先生がお見えになりました。",
+      "good": [
+        "has arrived",
+        "is here",
+        "has come",
+        "is arriving",
+        "arrived"
+      ],
+      "bad": [
+        "looks",
+        "can see",
+        "saw"
+      ]
+    },
+    {
+      "id": "asr-run-on-no-punctuation",
+      "text": "えっとそれでさあ昨日駅で会った人がさあ実は先輩の弟だったんだよね",
+      "good": [
+        "brother"
+      ],
+      "bad": [
+        "my (older |younger )?brother"
+      ]
+    },
+    {
+      "id": "never-been",
+      "text": "北海道には一度も行ったことがないんです。",
+      "good": [
+        "never been",
+        "never gone",
+        "never visited",
+        "haven't ever",
+        "not once"
+      ],
+      "bad": []
+    },
+    {
+      "id": "regret-shimatta",
+      "before": [
+        "あ、それ私のケーキ！"
+      ],
+      "text": "ごめん、全部食べちゃった。",
+      "good": [
+        "ate (it all|all of it|the whole|everything)",
+        "ate it all",
+        "finished it",
+        "ate all"
+      ],
+      "bad": []
+    },
+    {
+      "id": "hazu-expectation",
+      "text": "もう着いているはずなんだけど…",
+      "good": [
+        "should (have )?(be|arrived|got|gotten|already)",
+        "should be here",
+        "supposed to",
+        "expected"
+      ],
+      "bad": []
+    },
+    {
+      "id": "shika-nai",
+      "text": "もうやるしかない。",
+      "good": [
+        "no choice",
+        "only (thing|option|way)",
+        "have to do it",
+        "just have to",
+        "gotta do it",
+        "got to do it",
+        "just do it",
+        "nothing (else )?(to do|left) but",
+        "only one thing",
+        "nothing left to do",
+        "no other choice"
+      ],
+      "bad": []
+    }
+  ],
+  "words": [
+    {
+      "id": "kao-in-idiom",
+      "text": "顔",
+      "sentence": "あの人は顔が広いから、聞いてみたら？",
+      "good": [
+        "connect",
+        "know",
+        "network",
+        "acquaint",
+        "influence"
+      ],
+      "bad": [
+        "^face$"
+      ]
+    },
+    {
+      "id": "me-in-idiom",
+      "text": "目",
+      "sentence": "私、甘いものに目がないの。",
+      "good": [
+        "weakness",
+        "resist",
+        "love",
+        "crazy",
+        "fond",
+        "crav",
+        "can't get enough",
+        "into"
+      ],
+      "bad": [
+        "^eyes?$"
+      ]
+    },
+    {
+      "id": "omie-honorific",
+      "text": "お見え",
+      "sentence": "先生がお見えになりました。",
+      "good": [
+        "arriv",
+        "come",
+        "came",
+        "visit"
+      ],
+      "bad": [
+        "^look",
+        "^see"
+      ]
+    },
+    {
+      "id": "akan-kansai",
+      "text": "あかん",
+      "sentence": "そんなんしたらあかんで。",
+      "good": [
+        "no good",
+        "not allowed",
+        "mustn't",
+        "can't",
+        "shouldn't",
+        "won't do",
+        "not ok",
+        "bad",
+        "don't"
+      ],
+      "bad": [
+        "red"
+      ]
+    },
+    {
+      "id": "hanasenai",
+      "text": "離せない",
+      "sentence": "ごめん、今手が離せないんだ。",
+      "good": [
+        "busy",
+        "tied up",
+        "can't get away",
+        "occupied",
+        "can't leave",
+        "can't step away",
+        "hands are full"
+      ],
+      "bad": [
+        "release"
+      ]
+    }
+  ]
+}
