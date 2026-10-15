@@ -20,8 +20,8 @@ export interface MessageMap {
   /** Starts the download; follow it with onDeviceStatus. */
   onDeviceDownload: { request: { model: string }; response: null };
   onDeviceDelete: { request: { model: string }; response: null };
-  /** Readings for a Japanese line, from the installed "Japanese readings" pack. */
-  readings: { request: { text: string }; response: ReadingToken[] };
+  /** Readings for a line: furigana (Japanese, from the "Japanese readings" pack) or pinyin (Chinese). */
+  readings: { request: { text: string; lang: string }; response: ReadingToken[] };
   /**
    * Starts recognising the speech in a tab's audio. `streamId` comes from tabCapture.getMediaStreamId;
    * without it, the YouTube page sends the audio its player has buffered (look-ahead).
