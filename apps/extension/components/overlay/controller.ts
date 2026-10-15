@@ -291,6 +291,12 @@ export abstract class SubtitleController {
         if (this.store.get().trackKey === TRANSCRIPT_KEY) {
           this.extendTrack(cues);
           this.store.set({ notice: undefined });
+          // A recognised line arrives after it was spoken, so "pause after every line" pauses when it arrives.
+          const video = this.video;
+          if (event.kind === 'lines' && this.store.get().settings.autoPause && video && !video.paused && cues.length > 0) {
+            video.pause();
+            this.autoPausedIndex = cues.length - 1;
+          }
         }
         break;
       }
@@ -408,7 +414,7 @@ export abstract class SubtitleController {
       const active = findActiveCueIndex(cues, time);
 
       let display = active;
-      const linger = video.paused ? LINGER_SECONDS : state.trackKey === TRANSCRIPT_KEY && this.transcribing ? TRANSCRIPT_LINGER_SECONDS : 0;
+      const linger = state.trackKey === TRANSCRIPT_KEY && this.transcribing ? TRANSCRIPT_LINGER_SECONDS : video.paused ? LINGER_SECONDS : 0;
       if (display === -1 && linger > 0) {
         const previous = findCueIndexAtOrBefore(cues, time);
         if (previous !== -1 && time - cues[previous]!.end < linger) display = previous;
