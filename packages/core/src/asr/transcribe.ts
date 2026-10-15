@@ -139,6 +139,38 @@ export class MediaClock {
   }
 }
 
+/**
+ * The stretches of a video (in seconds) whose audio was already transcribed, so a rewind can show the
+ * lines it has instead of recognising and translating the same speech again.
+ */
+export class HeardSpans {
+  private spans: { start: number; end: number }[] = [];
+
+  /** Call regularly while the video plays and is listened to. A jump of more than `gap` starts a new span. */
+  add(time: number, gap = 1): void {
+    const span = this.spans.find((s) => time >= s.start && time <= s.end + gap);
+    if (span) span.end = Math.max(span.end, time);
+    else this.spans.push({ start: time, end: time });
+    this.spans.sort((a, b) => a.start - b.start);
+    // Spans that grew into each other become one.
+    this.spans = this.spans.reduce<{ start: number; end: number }[]>((merged, s) => {
+      const last = merged.at(-1);
+      if (last && s.start <= last.end) last.end = Math.max(last.end, s.end);
+      else merged.push({ ...s });
+      return merged;
+    }, []);
+  }
+
+  /** Whether `time` was heard, and more than `margin` seconds of that span still lie ahead. */
+  covers(time: number, margin = 0): boolean {
+    return this.spans.some((s) => time >= s.start && time < s.end - margin);
+  }
+
+  clear(): void {
+    this.spans = [];
+  }
+}
+
 /** One recognised line with wall-clock times (milliseconds). */
 export interface SpokenLine {
   startWall: number;

@@ -28,6 +28,8 @@ export interface MessageMap {
    */
   asrStart: { request: { tabId: number; streamId?: string; language: string; pack: string }; response: null };
   asrStop: { request: null; response: null };
+  /** Pauses recognition while the viewer replays a part that was already transcribed. */
+  asrHold: { request: { hold: boolean }; response: null };
   /** Starts the desktop companion if needed and returns its engines' names. Needs the nativeMessaging permission. */
   companionPing: { request: null; response: { engine: string; live?: string } };
   /** From the offscreen document: one utterance for the companion, `pcm` as from `encodePcm`. */

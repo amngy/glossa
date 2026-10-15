@@ -128,6 +128,10 @@ export default defineBackground(() => {
     readings: ({ text }) => cached(`r|${text}`, () => askOffscreen({ type: 'readings', text })),
 
     asrStart,
+    async asrHold({ hold }) {
+      await askOffscreen({ type: 'asr-hold', hold });
+      return null;
+    },
     async asrStop() {
       await askOffscreen({ type: 'asr-stop' });
       return null;

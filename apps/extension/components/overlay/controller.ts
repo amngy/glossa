@@ -2,6 +2,7 @@ import { browser, type ContentScriptContext } from '#imports';
 import {
   addTranscribedCues,
   BrowserTranslator,
+  HeardSpans,
   MediaClock,
   placeSpokenLines,
   baseLanguage,
@@ -37,6 +38,8 @@ export const TRANSCRIPT_KEY = 'transcript';
 export const LIVE_INDEX = -2;
 /** How often the video's position is sampled to place recognised lines on its timeline. */
 const CLOCK_INTERVAL_MS = 250;
+/** Seconds before the end of an already heard part where listening starts again. */
+const REPLAY_MARGIN = 1;
 
 const TRANSLATION_DISPLAY_ORDER: TranslationDisplay[] = ['show', 'blur', 'hide'];
 /** While paused, keep showing a line this many seconds after it ends. */
@@ -92,6 +95,9 @@ export abstract class SubtitleController {
   private liveGeneration = 0;
   private readonly clock = new MediaClock();
   private lastClockSample = 0;
+  /** What was already listened to; replaying it shows the lines Glossa has instead of recognising them again. */
+  private readonly heard = new HeardSpans();
+  private replaying = false;
 
   constructor(
     protected readonly ctx: ContentScriptContext,
@@ -182,6 +188,8 @@ export abstract class SubtitleController {
     if (this.transcribing) void sendMessage('asrStop', null).catch(() => {});
     this.transcribing = false;
     this.transcript = null;
+    this.heard.clear();
+    this.replaying = false;
     this.endLiveLine();
   }
 
@@ -258,6 +266,7 @@ export abstract class SubtitleController {
         break;
       }
       case 'partial':
+        if (this.replaying) break;
         if (event.text) this.onPartialText(event.text);
         else this.endLiveLine();
         break;
@@ -345,6 +354,14 @@ export abstract class SubtitleController {
     if (this.transcribing && video && !video.paused && performance.now() - this.lastClockSample > CLOCK_INTERVAL_MS) {
       this.lastClockSample = performance.now();
       this.clock.record(Date.now(), video.currentTime, video.playbackRate);
+      this.heard.add(video.currentTime);
+    }
+    // Listening resumes a little before the heard part ends, so the recogniser has the start of the next line.
+    const replaying = this.transcribing && !!video && this.heard.covers(video.currentTime, REPLAY_MARGIN);
+    if (replaying !== this.replaying) {
+      this.replaying = replaying;
+      if (replaying) this.endLiveLine();
+      void sendMessage('asrHold', { hold: replaying }).catch(() => {});
     }
 
     const state = this.store.get();
