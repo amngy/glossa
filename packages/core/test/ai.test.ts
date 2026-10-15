@@ -27,6 +27,11 @@ describe('prompts with nearby lines', () => {
     expect(buildExplainPrompt({ ...request, explainIn: 'en' }).endsWith('Write the explanation in English.')).toBe(true);
   });
 
+  it('never asks for a translation of the line, which Glossa already shows', () => {
+    expect(buildExplainPrompt({ kind: 'sentence', sentence: 'Hola.', lang: 'es', explainIn: 'en' })).toContain("so don't translate it");
+    expect(buildExplainPrompt({ kind: 'sentence', sentence: 'Hi there.', lang: 'en-US', explainIn: 'en' })).toContain("Don't restate");
+  });
+
   it('leaves context out when there is none', () => {
     const prompt = buildExplainPrompt({ kind: 'sentence', sentence: 'Hola.', lang: 'es', explainIn: 'en' });
     expect(prompt).not.toContain('Lines before');
