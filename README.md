@@ -123,6 +123,8 @@ How local models compare on Japanese → English (40 lines and words from
 | Model | Passed | Median per call |
 | --- | --- | --- |
 | `gemma4:e4b` | 36 / 40 | 0.2 s |
+| `gemma4:12b-it-qat` | 37 / 40 | 0.8–1.7 s (7.2 GB: a quarter runs on the CPU) |
+| `gemma4:26b-a4b-it-qat` | 35 / 40 | 0.75 s (15 GB, two thirds on the CPU; only 4B active, so still fast) |
 | `qwen3.5:9b` | 34 / 40 | 0.3 s |
 | `qwen2.5:7b` | 29 / 40 | 0.1 s |
 | `qwen3.5:4b` | 28 / 40 | 0.2 s |
@@ -137,6 +139,13 @@ translations, so read the outputs too: `pnpm --filter @glossa/core eval <model>`
 A smaller Spanish → English set (18 cases, `es-en.json`; run it with `EVAL_SUITE=es-en.json`) gave
 `gemma4:e4b` 18, `qwen3.5:9b` 17, `translategemma:4b` 16 and `qwen3.5:4b` 14. Only models served by Ollama have been measured;
 Glossa's packaged on-device models are not in these tables yet.
+
+A harder Japanese set (25 idioms, grammar patterns, Kansai dialect, sarcasm and subjects only the context
+gives; `EVAL_SUITE=ja-en-hard.json`) separates the small models: `gemma4:12b-it-qat` 25, `gemma4:26b-a4b-it-qat`
+25, `gemma4:e4b` 24, `qwen3.5:9b` 24, `translategemma:4b` 15, `qwen3.5:4b` 13. On both sets the bigger Gemma 4
+models are not clearly better than `gemma4:e4b`, only slower on an 8 GB card, so `gemma4:e4b` stays the
+recommendation. With 16 GB or more of video memory, `gemma4:26b-a4b` or `gemma4:31b` fit entirely and are
+worth trying; nobody has measured them on such a card yet.
 
 Both sections have a **Test** button. Ollama normally refuses requests from browser extensions; Glossa
 handles that for you in Chrome and Edge. If you still get a 403 (for example in Firefox), set the environment
