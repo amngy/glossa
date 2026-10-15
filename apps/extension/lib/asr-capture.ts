@@ -41,6 +41,11 @@ export class AsrSession {
   private streams: MediaStream | null = null;
   private contexts: AudioContext[] = [];
   private stopped = false;
+  /**
+   * Set while the viewer replays audio that was already transcribed. The recogniser then gets silence:
+   * dropping the audio would shift every later line's time, and Whisper skips silence anyway.
+   */
+  hold = false;
 
   private readonly endpointer = new Endpointer({ sampleRate: SAMPLE_RATE });
   /** Wall-clock time (ms) of the audio clock's zero, and the audio time of the first block. */
@@ -125,8 +130,9 @@ export class AsrSession {
     capture.port.onmessage = (event: MessageEvent<{ samples: Float32Array; time: number }>) => {
       if (this.stopped) return;
       if (this.firstBlockTime === null) this.firstBlockTime = event.data.time;
-      if (this.live) return this.live.postMessage({ pcm: encodePcm(event.data.samples) } satisfies CompanionStreamMessage);
-      for (const utterance of this.endpointer.push(event.data.samples)) {
+      const samples = this.hold ? new Float32Array(event.data.samples.length) : event.data.samples;
+      if (this.live) return this.live.postMessage({ pcm: encodePcm(samples) } satisfies CompanionStreamMessage);
+      for (const utterance of this.endpointer.push(samples)) {
         this.enqueue({ samples: utterance.samples, startWall: this.wallOf(utterance.start) });
       }
     };

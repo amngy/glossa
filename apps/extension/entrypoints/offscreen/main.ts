@@ -67,6 +67,11 @@ browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =
     sendResponse({ ok: true, data: null } satisfies OffscreenReply);
     return;
   }
+  if (request.type === 'asr-hold') {
+    if (asr instanceof AsrSession) asr.hold = request.hold;
+    sendResponse({ ok: true, data: null } satisfies OffscreenReply);
+    return;
+  }
   if (request.type === 'asr-stop') {
     asr?.stop();
     sendResponse({ ok: true, data: null } satisfies OffscreenReply);

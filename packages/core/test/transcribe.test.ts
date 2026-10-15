@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addTranscribedCues, Endpointer, MediaClock, placeSpokenLines, segmentsToCues } from '../src';
+import { addTranscribedCues, Endpointer, HeardSpans, MediaClock, placeSpokenLines, segmentsToCues } from '../src';
 
 const RATE = 16000;
 const silence = (seconds: number) => new Float32Array(Math.round(seconds * RATE));
@@ -109,5 +109,23 @@ describe('segmentsToCues', () => {
       { start: 40.65, end: 42.15, text: '今週末は' },
       { start: 42.85, end: 44.85, text: '晴れです' },
     ]);
+  });
+});
+
+describe('HeardSpans', () => {
+  it('grows while playing, splits on a seek, and merges when they meet', () => {
+    const heard = new HeardSpans();
+    for (let t = 10; t <= 20; t += 0.25) heard.add(t);
+    expect(heard.covers(15)).toBe(true);
+    expect(heard.covers(19.5, 1)).toBe(false); // near the end: listen again
+    expect(heard.covers(25)).toBe(false);
+    heard.add(30); // seek ahead
+    expect(heard.covers(25)).toBe(false);
+    for (let t = 20; t <= 30; t += 0.5) heard.add(t); // plays on into the later span
+    expect(heard.covers(25)).toBe(true);
+    heard.add(5); // rewind before anything heard
+    expect(heard.covers(5.5)).toBe(false);
+    heard.clear();
+    expect(heard.covers(15)).toBe(false);
   });
 });
