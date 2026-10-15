@@ -126,13 +126,16 @@ How local models compare on Japanese → English (40 lines and words from
 | `qwen3.5:9b` | 34 / 40 | 0.3 s |
 | `qwen2.5:7b` | 29 / 40 | 0.1 s |
 | `qwen3.5:4b` | 28 / 40 | 0.2 s |
+| `translategemma:4b` | 28 / 40 | 0.2 s (a translation-only model: fine for lines, weaker on single words) |
 | `aya-expanse:8b` | 27 / 40 | 0.2 s |
 | `deepseek-r1:8b` | 26 / 40 | 5.6 s (it thinks first, and sometimes returns nothing) |
+| `demonbyron/HY-MT1.5-7B` | 21 / 40 | 0.2 s (often translates a neighbouring line instead) |
+| `demonbyron/HY-MT1.5-1.8B` | 18 / 40 | 0.1 s (often repeats the instructions back) |
 
 The pass check is rough (it looks for phrases a good translation contains), and some misses are fair
 translations, so read the outputs too: `pnpm --filter @glossa/core eval <model>` runs it on your machine.
 A smaller Spanish → English set (18 cases, `es-en.json`; run it with `EVAL_SUITE=es-en.json`) gave
-`gemma4:e4b` 18, `qwen3.5:9b` 17 and `qwen3.5:4b` 14. Only models served by Ollama have been measured;
+`gemma4:e4b` 18, `qwen3.5:9b` 17, `translategemma:4b` 16 and `qwen3.5:4b` 14. Only models served by Ollama have been measured;
 Glossa's packaged on-device models are not in these tables yet.
 
 Both sections have a **Test** button. Ollama normally refuses requests from browser extensions; Glossa
