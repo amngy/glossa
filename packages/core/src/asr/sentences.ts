@@ -30,7 +30,7 @@ export interface SentenceOptions {
  * translate badly on their own. Joins each line that doesn't end a sentence with the next one, if the
  * pause between them is short. Cues must be sorted; returns new cues.
  */
-export function joinSentences(cues: readonly Cue[], { gap = 1, maxSeconds = 10, maxLength = 160 }: SentenceOptions = {}): Cue[] {
+export function joinSentences(cues: readonly Cue[], { gap = 1.5, maxSeconds = 10, maxLength = 160 }: SentenceOptions = {}): Cue[] {
   const joined: Cue[] = [];
   for (const cue of cues) {
     const last = joined.at(-1);
