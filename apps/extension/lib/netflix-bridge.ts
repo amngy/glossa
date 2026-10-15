@@ -8,7 +8,7 @@ import type { NetflixTextTrack } from '@glossa/core';
 export const NETFLIX_FROM_PAGE = 'glossa:netflix-page';
 export const NETFLIX_TO_PAGE = 'glossa:netflix-extension';
 
-/** The WebVTT subtitle files Netflix's manifest lists for the title now playing, and the audio's language. */
+/** The subtitle files Netflix's manifest lists for the title now playing, and the audio's language. */
 export interface NetflixTracksMessage {
   source: typeof NETFLIX_FROM_PAGE;
   type: 'tracks';

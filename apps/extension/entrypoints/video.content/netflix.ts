@@ -1,4 +1,4 @@
-import { baseLanguage, languageName, parseTextSubtitles } from '@glossa/core';
+import { baseLanguage, languageName, parseTextSubtitles, parseTtmlSubtitles } from '@glossa/core';
 import type { ContentScriptContext } from '#imports';
 import type { Store } from '@/lib/store';
 import type { OverlayState } from '@/components/overlay/state';
@@ -34,7 +34,8 @@ export function startNetflix(ctx: ContentScriptContext, controller: VideoControl
       if (!file) continue;
       const response = await fetch(file.url, { credentials: 'omit' });
       if (!response.ok || loaded !== key) continue;
-      const cues = parseTextSubtitles(await response.text());
+      const body = await response.text();
+      const cues = file.format === 'ttml' ? parseTtmlSubtitles(body) : parseTextSubtitles(body);
       if (cues.length > 0) controller.addSiteFile(file.url, { lang: file.lang, label: languageName(file.lang), cues }, false);
     }
   }

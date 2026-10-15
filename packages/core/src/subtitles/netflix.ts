@@ -7,8 +7,17 @@ const KNOWN_PROFILES = new Set(['heaac-2-dash', 'dfxp-ls-sdh', 'simplesdh', 'nfl
 export interface NetflixTextTrack {
   lang: string;
   url: string;
+  /** WebVTT when Netflix honoured the request for it, else its default TTML (IMSC or DFXP). */
+  format: 'vtt' | 'ttml';
   closedCaptions: boolean;
 }
+
+// The text formats Netflix offers, best first.
+const FORMATS: [string, NetflixTextTrack['format']][] = [
+  [NETFLIX_WEBVTT, 'vtt'],
+  ['imsc1.1', 'ttml'],
+  ['dfxp-ls-sdh', 'ttml'],
+];
 
 /**
  * Adds WebVTT to the profiles in a manifest request about to be sent, and says whether it did.
@@ -30,19 +39,21 @@ export function addNetflixWebVtt(request: unknown): boolean {
   return true;
 }
 
-/** The movie ID and WebVTT text tracks in a parsed manifest response, or null if `value` isn't one. */
+/** The movie ID and text tracks in a parsed manifest response, or null if `value` isn't one. */
 export function netflixTextTracks(value: unknown): { movie: string; tracks: NetflixTextTrack[] } | null {
   const result = (value as { result?: { movieId?: unknown; textTracks?: unknown } } | null)?.result;
   if (!result?.movieId || !Array.isArray(result.textTracks)) return null;
   const tracks = result.textTracks.flatMap((track): NetflixTextTrack[] => {
     if (!track || track.isForcedNarrative || track.isNoneTrack || track.isImageBased) return [];
-    // `urls` has been an array of { url } and an object of URLs by CDN.
-    const first: unknown = Object.values(track.downloadables?.[NETFLIX_WEBVTT]?.urls ?? {})[0];
-    const url = typeof first === 'string' ? first : (first as { url?: unknown } | undefined)?.url;
     const lang: unknown = track.language ?? track.bcp47;
-    return typeof url === 'string' && typeof lang === 'string'
-      ? [{ lang, url, closedCaptions: track.rawTrackType === 'closedcaptions' }]
-      : [];
+    if (typeof lang !== 'string') return [];
+    for (const [profile, format] of FORMATS) {
+      // `urls` has been an array of { url } and an object of URLs by CDN.
+      const first: unknown = Object.values(track.downloadables?.[profile]?.urls ?? {})[0];
+      const url = typeof first === 'string' ? first : (first as { url?: unknown } | undefined)?.url;
+      if (typeof url === 'string') return [{ lang, url, format, closedCaptions: track.rawTrackType === 'closedcaptions' }];
+    }
+    return [];
   });
   return { movie: String(result.movieId), tracks };
 }
