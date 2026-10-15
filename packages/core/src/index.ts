@@ -16,6 +16,7 @@ export { LiveLine, type LiveText } from './asr/live';
 export {
   addTranscribedCues,
   Endpointer,
+  HeardSpans,
   MediaClock,
   mixToMono,
   placeSpokenLines,

@@ -13,7 +13,9 @@ export type AsrRequest =
    * `notice` replaces the usual loading message.
    */
   | { type: 'asr-start'; tabId: number; streamId?: string; language: string; pack: string; notice?: string }
-  | { type: 'asr-stop' };
+  | { type: 'asr-stop' }
+  /** While the viewer replays audio that was already transcribed, the recogniser gets silence instead. */
+  | { type: 'asr-hold'; hold: boolean };
 
 export interface AsrStatus {
   /** The tab being transcribed, if any. */
