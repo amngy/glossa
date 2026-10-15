@@ -18,6 +18,7 @@ import {
   languageName,
   parseAssSubtitles,
   parseTextSubtitles,
+  romajiSpans,
   rubySpans,
   subtitleContext,
   type Cue,
@@ -841,17 +842,19 @@ export abstract class SubtitleController {
 
   private readonly readingCache = new Map<string, Promise<RubySpan[]>>();
 
-  /** Where readings go in a line (furigana or pinyin); empty if they can't be had. */
+  /** Where readings go in a line (pinyin, furigana or romaji); empty if they can't be had. */
   readingSpans(text: string, lang: string): Promise<RubySpan[]> {
-    let spans = this.readingCache.get(text);
+    const romaji = baseLanguage(lang) === 'ja' && this.store.get().settings.japaneseReadings === 'romaji';
+    const key = `${romaji ? 'romaji' : 'ruby'}|${text}`;
+    let spans = this.readingCache.get(key);
     if (!spans) {
       spans = sendMessage('readings', { text, lang })
-        .then((tokens) => rubySpans(text, tokens))
+        .then((tokens) => (romaji ? romajiSpans(text, tokens) : rubySpans(text, tokens)))
         .catch(() => {
-          this.readingCache.delete(text);
+          this.readingCache.delete(key);
           return [];
         });
-      this.readingCache.set(text, spans);
+      this.readingCache.set(key, spans);
     }
     return spans;
   }

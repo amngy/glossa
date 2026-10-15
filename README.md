@@ -44,8 +44,8 @@ talks to. You can also run every one of those services yourself.
   saved or marked, so the new ones stand out.
 - **Readings (optional).** Chinese lines can show pinyin over each character, with the tone marks the word
   needs (银行 yínháng); it's built in and works offline. Japanese lines can show furigana over each kanji,
-  which needs the "Japanese readings" pack from Settings; see [Optional packs](#optional-packs). Furigana
-  works in Chrome and Edge only for now.
+  or romaji over each word instead (は as "wa", 東京 as "tōkyō"). Both need the "Japanese readings" pack
+  from Settings; see [Optional packs](#optional-packs), and work in Chrome and Edge only for now.
 - **Subtitles from sound (optional).** For a video with no subtitles at all, Glossa can listen to the tab's
   audio and write them on your device, with a Whisper speech pack or Chrome's built-in recognition. Lines
   show up a few seconds after they're spoken, so rewind to read one. On YouTube, an experimental mode

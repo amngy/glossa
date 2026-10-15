@@ -8,6 +8,8 @@ export interface RubyPart {
 export interface ReadingToken {
   surface: string;
   reading?: string;
+  /** How it's said, where that differs from the spelling (the particle は: ワ). */
+  pronunciation?: string;
 }
 
 /** Where a reading goes in a line: `text.slice(start, end)` is written with `ruby` above it. */

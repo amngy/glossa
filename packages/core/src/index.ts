@@ -12,6 +12,7 @@ export { baseLanguage, languageName, languageFromFileName, languageFromSubtitleC
 export { pickVoice, type VoiceLike } from './text/voice';
 export { rubyIn, rubyParts, rubySpans, type ReadingToken, type RubyPart, type RubySpan } from './text/ruby';
 export { chineseReadings } from './text/pinyin';
+export { romajiSpans } from './text/romaji';
 
 export { LiveLine, type LiveText } from './asr/live';
 export { endsSentence, joinSentences, joinText, type SentenceOptions } from './asr/sentences';
