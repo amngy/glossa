@@ -187,7 +187,7 @@ Glossa doesn't run on other sites until you ask it to, so it needs no access to 
 1. Open the page with the video and click Glossa's toolbar button.
 2. Choose **Subtitles for the video on this page**. Glossa follows the largest video that's playing.
 3. If the video has no subtitles of its own, click the file button in Glossa's toolbar (hover over the video)
-   and pick a `.srt` or `.vtt` file. Glossa guesses the language from the file name (`movie.es.srt`) or
+   and pick a `.srt`, `.vtt`, `.ass` or `.ttml` file. Glossa guesses the language from the file name (`movie.es.srt`) or
    the text; correct it in the toolbar if needed.
 
 Tick **Always on <site>** in the popup to start Glossa there by itself; the browser asks for access to that
@@ -212,11 +212,17 @@ downloads the ones in the spoken language and in your own language; Netflix's ow
 Glossa shows its own. Tick **Always on www.netflix.com** in the popup. Titles whose subtitles are images have
 no text to read; transcribe the audio instead.
 
+**Prime Video** (`www.primevideo.com`, and `www.amazon.com`, `.co.uk`, `.de`, `.co.jp`; experimental and
+**untested**, see [#80](https://github.com/amngy/glossa/issues/80)). Glossa reads the subtitle list Prime
+Video's player loads and downloads the files in your own language and in the spoken language you last
+picked in the popup (the list doesn't say which audio plays). Prime Video's own subtitles are hidden while
+Glossa shows its own. Tick **Always on** for the site in the popup.
+
 Limits: subtitles a site draws itself (rather than as `<track>` elements) aren't read, so load a file
 instead. Cross-site subtitle tracks only load if the site allows it. If a player puts the bare video
 element into fullscreen, nothing can be drawn over it, so the browser shows the subtitles without clickable
-words. Most players put their whole player into fullscreen, and Glossa works there. Prime Video and
-Disney+ aren't supported yet.
+words. Most players put their whole player into fullscreen, and Glossa works there. Disney+ isn't
+supported yet.
 
 ## Privacy
 
@@ -247,7 +253,9 @@ On other sites Glossa only reads the subtitle tracks the page already loaded, or
 sends nothing to those sites. On Stremio Web it reads the subtitle files and list Stremio already downloaded;
 that's no new request either. On Crunchyroll it downloads one subtitle file per episode (two if there's
 one in the spoken language) from Crunchyroll's own servers, the site you're watching. On Netflix it
-downloads up to two subtitle files per title, from the addresses Netflix's own player lists.
+downloads up to two subtitle files per title, from the addresses Netflix's own player lists. On Prime
+Video it does the same with the files Prime Video's player lists; if the player's own listing has no
+subtitles, Glossa asks Amazon once more with the player's own request.
 
 API keys stay in your browser's extension storage on this device. They aren't synced, and only Glossa's
 background script reads them. Glossa asks for permission to reach a server only when you save a setting
@@ -340,7 +348,7 @@ create `apps/extension/web-ext.config.ts`; it's ignored by git. See
 
 ```
 packages/core        Platform-independent logic, no browser APIs
-  src/subtitles      Parsing YouTube json3, WebVTT and SRT; finding the active cue
+  src/subtitles      Parsing YouTube json3, WebVTT, SRT, ASS and TTML/DFXP; finding the active cue
   src/text           Word segmentation (Intl.Segmenter), language names, guessing a file's language from its name or add-on code
   src/providers      Translators, Wiktionary, AI models (Claude, OpenAI-compatible, the browser's built-in model), prompts
   src/asr            Speech: cutting audio at pauses, WebM demuxing, live lines, the companion protocol
@@ -352,6 +360,7 @@ apps/extension       Browser extension (WXT + Preact, Manifest V3)
   entrypoints/video.content/            Any page's HTML5 video: <track>s or a subtitle file. Started from the popup
   entrypoints/stremio-hook.content.ts   Runs in Stremio Web's page; copies the subtitle files its player downloads
   entrypoints/netflix-hook.content.ts      Runs in Netflix's page; asks for WebVTT subtitles and lists them
+  entrypoints/prime-video-hook.content.ts  Runs in Prime Video's page; reads the subtitle list its player loads
   entrypoints/crunchyroll-hook.content.ts  Runs in Crunchyroll's page; reads each episode's subtitle list
   components/overlay/                   The overlay shared by both: subtitles, toolbar, word card, base controller
   entrypoints/background.ts             Provider calls, cache, API keys

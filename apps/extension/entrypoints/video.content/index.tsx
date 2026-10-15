@@ -9,6 +9,7 @@ import { createStore } from '@/lib/store';
 import { VideoController } from './controller';
 import { startCrunchyroll } from './crunchyroll';
 import { startNetflix } from './netflix';
+import { startPrimeVideo } from './prime-video';
 import { startStremio } from './stremio';
 
 /** Where the overlay goes: inside the fullscreen element, so it stays visible there. */
@@ -59,6 +60,7 @@ export default defineContentScript({
     if (location.hostname === 'web.stremio.com') startStremio(ctx, controller, store);
     if (location.hostname === 'www.crunchyroll.com') startCrunchyroll(ctx, controller, store);
     if (location.hostname === 'www.netflix.com') startNetflix(ctx, controller, store);
+    if (/^www\.(primevideo\.com|amazon\.(com|co\.uk|de|co\.jp))$/.test(location.hostname)) startPrimeVideo(ctx, controller, store);
     return { videos: controller.videoCount() };
   },
 });

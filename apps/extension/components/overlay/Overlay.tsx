@@ -292,7 +292,7 @@ function Toolbar({
         <>
           <button
             class="glossa-tool"
-            title="Load a subtitle file (.srt or .vtt)"
+            title="Load a subtitle file (.srt, .vtt, .ass or .ttml)"
             aria-label="Load a subtitle file"
             onMouseDown={keepFocus}
             onClick={() => fileInput.current?.click()}
@@ -302,7 +302,7 @@ function Toolbar({
           <input
             ref={fileInput}
             type="file"
-            accept=".srt,.vtt,.ass,.ssa,text/vtt"
+            accept=".srt,.vtt,.ass,.ssa,.ttml,.dfxp,.xml,text/vtt"
             hidden
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
