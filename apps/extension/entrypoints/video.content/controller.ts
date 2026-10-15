@@ -12,6 +12,16 @@ import { detectLanguage } from '@/lib/detect-language';
 
 /** `TrackOption.key` of a subtitle file the viewer loaded. */
 const FILE_KEY = 'file';
+
+/** A subtitle file the viewer loaded, or one the site downloaded (Stremio Web). `guessed`: its language is a guess. */
+interface SubtitleFile {
+  key: string;
+  track: SubtitleTrack;
+  guessed: boolean;
+  /** Where the site downloaded it from. */
+  url?: string;
+}
+
 /** Smaller videos are previews, thumbnails or ads rather than something to watch with subtitles. */
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 110;
@@ -107,7 +117,8 @@ export class VideoController extends SubtitleController {
   private translationSource: TextTrack | null = null;
   private translationCueCount = -1;
   private translationWaitStart = 0;
-  private fileTrack: SubtitleTrack | null = null;
+  private files: SubtitleFile[] = [];
+  private siteFileCount = 0;
 
   /** In the video element's own fullscreen nothing can be drawn over it, so the browser shows the subtitles. */
   private nativeFallback = false;
@@ -199,7 +210,8 @@ export class VideoController extends SubtitleController {
     this.primary = null;
     this.translationSource = null;
     this.translationTrackPending = false;
-    this.fileTrack = null;
+    // The site's files stay: Stremio downloads them before the video loads.
+    this.files = this.files.filter((file) => file.key !== FILE_KEY);
     this.fallbackTrack = null;
     this.clearTranscript();
     this.setTrack(undefined, {
@@ -249,7 +261,7 @@ export class VideoController extends SubtitleController {
     if (!video) return;
     this.textTracks = [...video.textTracks].filter((t) => isSubtitleTrack(t) && t !== this.fallbackTrack);
     const options: TrackOption[] = this.textTracks.map((t, i) => ({ key: this.keyFor(t), name: trackName(t, i) }));
-    if (this.fileTrack) options.push({ key: FILE_KEY, name: this.fileTrack.label ?? 'Subtitle file' });
+    for (const file of this.files) options.push({ key: file.key, name: file.track.label ?? 'Subtitle file' });
     const transcript = this.transcriptOption();
     if (transcript) options.push(transcript);
     this.store.set({ tracks: options });
@@ -259,13 +271,16 @@ export class VideoController extends SubtitleController {
       this.chooseTranslationSource();
       return;
     }
+    const native = baseLanguage(settings.nativeLanguage);
     if (this.textTracks.length === 0) {
       this.primary = null;
-      if (!this.fileTrack && !this.transcript) this.setTrack(undefined, { status: 'no-subtitles', trackKey: null, languageGuessed: false });
+      // The latest file not in the viewer's own language.
+      const file = this.files.findLast((f) => baseLanguage(f.track.lang) !== native) ?? this.files.at(-1);
+      if (file) this.useFile(file.key);
+      else if (!this.transcript) this.setTrack(undefined, { status: 'no-subtitles', trackKey: null, languageGuessed: false });
       return;
     }
     // The track the site shows, unless it's in the viewer's own language; then one in another language.
-    const native = baseLanguage(settings.nativeLanguage);
     const isForeign = (t: TextTrack) => !t.language || baseLanguage(t.language) !== native;
     const showing = this.textTracks.find((t) => t.mode === 'showing');
     const pick = (showing && isForeign(showing) ? showing : undefined) ?? this.textTracks.find(isForeign) ?? this.textTracks[0]!;
@@ -278,8 +293,8 @@ export class VideoController extends SubtitleController {
       this.showTranscript();
       return;
     }
-    if (key === FILE_KEY) {
-      this.useFile();
+    if (this.files.some((file) => file.key === key)) {
+      this.useFile(key);
       return;
     }
     const track = this.textTracks.find((t) => this.keyFor(t) === key);
@@ -336,21 +351,23 @@ export class VideoController extends SubtitleController {
     }
   }
 
-  /** Uses a page track in the viewer's language, if there is one, as the translation. */
+  /** Uses a page track or file in the viewer's language, if there is one, as the translation. */
   private chooseTranslationSource(): void {
-    const native = baseLanguage(this.store.get().settings.nativeLanguage);
-    const lang = this.store.get().track?.lang ?? this.primary?.language;
-    const source =
-      lang && baseLanguage(lang) === native
-        ? null
-        : (this.textTracks.find((t) => t !== this.primary && t.language && baseLanguage(t.language) === native) ?? null);
+    const { settings, track, trackKey } = this.store.get();
+    const native = baseLanguage(settings.nativeLanguage);
+    const lang = track?.lang ?? this.primary?.language;
+    const ownLanguage = !!lang && baseLanguage(lang) === native;
+    const source = ownLanguage
+      ? null
+      : (this.textTracks.find((t) => t !== this.primary && t.language && baseLanguage(t.language) === native) ?? null);
+    const file = ownLanguage || source ? undefined : this.files.findLast((f) => f.key !== trackKey && baseLanguage(f.track.lang) === native);
     this.translationCueCount = -1;
     this.translationWaitStart = performance.now();
     this.translationSource = source;
     // Until it's known whether the track covers a line, don't translate lines one by one.
     this.translationTrackPending = !!source;
     if (source && this.store.get().settings.enabled) this.hideNative(source);
-    if (!source) this.store.set({ translationTrack: undefined });
+    if (!source) this.store.set({ translationTrack: file?.track });
   }
 
   private syncTranslation(now: number): void {
@@ -379,8 +396,27 @@ export class VideoController extends SubtitleController {
   private async readFile(file: File): Promise<void> {
     const track = await this.readSubtitleFile(file);
     if (!track) return;
-    this.fileTrack = track;
-    this.useFile();
+    this.files = [...this.files.filter((f) => f.key !== FILE_KEY), { key: FILE_KEY, track, guessed: true }];
+    this.useFile(FILE_KEY);
+    this.refreshTracks();
+  }
+
+  /** Adds a subtitle file the site downloaded. Unless it's in the viewer's own language, it's the one the viewer picked there, so it's shown. */
+  addSiteFile(url: string, track: SubtitleTrack, guessed: boolean): void {
+    const native = baseLanguage(this.store.get().settings.nativeLanguage);
+    const key = `site-${++this.siteFileCount}`;
+    // The same file again (picked again) replaces the old copy.
+    this.files = [...this.files.filter((f) => f.url !== url), { key, track, guessed, url }];
+    if (baseLanguage(track.lang) !== native || !this.store.get().track) this.useFile(key);
+    // Otherwise it becomes the translation, if it fits.
+    this.refreshTracks();
+  }
+
+  /** Forgets the site's files, e.g. when another video opens. */
+  clearSiteFiles(): void {
+    const { trackKey } = this.store.get();
+    this.files = this.files.filter((f) => f.key === FILE_KEY);
+    if (trackKey?.startsWith('site-')) this.setTrack(undefined, { trackKey: null });
     this.refreshTracks();
   }
 
@@ -390,12 +426,13 @@ export class VideoController extends SubtitleController {
     this.primary = null;
   }
 
-  private useFile(): void {
-    if (!this.fileTrack) return;
+  private useFile(key: string): void {
+    const file = this.files.find((f) => f.key === key);
+    if (!file) return;
     this.setNativeFallback(false);
     this.primary = null;
-    // The file's language is a guess from its name or text, so the viewer can always correct it.
-    this.setTrack(this.fileTrack, { trackKey: FILE_KEY, languageGuessed: true });
+    // A file's language may be a guess from its name or text; then the viewer can correct it.
+    this.setTrack(file.track, { trackKey: key, languageGuessed: file.guessed });
     this.chooseTranslationSource();
     this.updateNativeFallback();
   }
@@ -404,7 +441,8 @@ export class VideoController extends SubtitleController {
     const { track, trackKey } = this.store.get();
     if (!track) return;
     const next = { ...track, lang };
-    if (trackKey === FILE_KEY) this.fileTrack = next;
+    const file = this.files.find((f) => f.key === trackKey);
+    if (file) file.track = next;
     else if (this.primary) this.languageOverrides.set(this.primary, lang);
     this.setTrack(next, { trackKey, languageGuessed: true });
     this.chooseTranslationSource();
