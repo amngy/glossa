@@ -47,6 +47,9 @@ importers:
       pinyin-pro:
         specifier: 3.29.4
         version: 3.29.4
+      wanakana:
+        specifier: 5.3.1
+        version: 5.3.1
     devDependencies:
       '@types/node':
         specifier: ^24.19.2
@@ -1597,6 +1600,10 @@ packages:
       jsdom:
         optional: true
 
+  wanakana@5.3.1:
+    resolution: {integrity: sha512-OSDqupzTlzl2LGyqTdhcXcl6ezMiFhcUwLBP8YKaBIbMYW1wAwDvupw2T9G9oVaKT9RmaSpyTXjxddFPUcFFIw==}
+    engines: {node: '>=12'}
+
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
@@ -2833,6 +2840,8 @@ snapshots:
       '@types/node': 24.19.2
     transitivePeerDependencies:
       - msw
+
+  wanakana@5.3.1: {}
 
   webpack-virtual-modules@0.6.2: {}
 

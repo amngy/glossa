@@ -83,7 +83,7 @@ function Line({
     return () => {
       current = false;
     };
-  }, [cue.text, wantReadings]);
+  }, [cue.text, wantReadings, state.settings.japaneseReadings]);
   let offset = 0;
   const selected = state.card?.kind === 'word' && state.card.cueIndex === index ? state.card.word : null;
 
