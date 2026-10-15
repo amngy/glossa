@@ -3,7 +3,8 @@ import type { Settings } from '@/lib/settings';
 
 export type Async<T> =
   | { state: 'idle' }
-  | { state: 'loading'; message?: string }
+  /** `draft`: an earlier translation (of the live or a shorter line) shown until this one arrives. */
+  | { state: 'loading'; message?: string; draft?: string }
   | { state: 'done'; value: T }
   | { state: 'error'; message: string };
 
@@ -88,7 +89,7 @@ export interface OverlayState {
    * A line still being recognised, shown in place of `displayIndex`'s cue. Only the first `settledLength`
    * characters are final (clickable); the rest is provisional. Its translation lives at `LIVE_INDEX`.
    */
-  live?: { cue: Cue; settledLength: number };
+  live?: { cue: Cue; settledLength: number; previousIndex?: number };
   /** Index into `track.cues` of the line on screen, or -1. */
   displayIndex: number;
   lineTranslations: ReadonlyMap<number, LineTranslation>;

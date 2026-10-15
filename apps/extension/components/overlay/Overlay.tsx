@@ -146,7 +146,11 @@ function Translation({ index, state, controller }: { index: number; state: Overl
     case 'done':
       return <div class={`glossa-translation${blurred}`}>{line.value}</div>;
     case 'loading':
-      return <div class="glossa-translation glossa-muted">…</div>;
+      return line.draft ? (
+        <div class={`glossa-translation${blurred}`}>{line.draft}</div>
+      ) : (
+        <div class="glossa-translation glossa-muted">…</div>
+      );
     case 'needs-click':
       return (
         <button class="glossa-translation glossa-translation-action" onMouseDown={keepFocus} onClick={() => controller.translateLineNow(index)}>
@@ -339,6 +343,7 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
   const live = state.live;
   const cue = live ? live.cue : track && displayIndex >= 0 ? track.cues[displayIndex] : undefined;
   const cueIndex = live ? LIVE_INDEX : displayIndex;
+  const previous = live?.previousIndex !== undefined ? track?.cues[live.previousIndex] : undefined;
   const fontSize = Math.round(Math.min(44, Math.max(15, state.playerHeight * 0.042 * settings.fontScale)));
   const canExplain = settings.ai.provider !== 'none' && cue !== undefined;
   const baseline = state.controlsHeight > 0 ? state.controlsHeight : state.playerHeight * 0.035;
@@ -366,6 +371,12 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
           rootRef={rootRef}
           maxRaise={maxRaise}
         />
+        {previous && live?.previousIndex !== undefined && (
+          <div class="glossa-previous">
+            <Line cue={previous} index={live.previousIndex} state={state} controller={controller} anchorFor={anchorFor} />
+            <Translation index={live.previousIndex} state={state} controller={controller} />
+          </div>
+        )}
         {cue && (
           <Line cue={cue} index={cueIndex} state={state} controller={controller} anchorFor={anchorFor} settledLength={live?.settledLength} />
         )}
