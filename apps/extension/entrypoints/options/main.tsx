@@ -487,15 +487,14 @@ function Options() {
                   <input
                     type="checkbox"
                     checked={settings.showReadings}
-                    disabled={!readingsInstalled}
                     onChange={(event) => change({ showReadings: event.currentTarget.checked })}
                   />
                   <span>
-                    Furigana over kanji (Japanese)
+                    Readings over characters: pinyin (Chinese), furigana (Japanese)
                     {!readingsInstalled && (
                       <span class="muted">
                         {' '}
-                        · install the <a href="#packs">Japanese readings pack</a> first
+                        · furigana needs the <a href="#packs">Japanese readings pack</a>
                       </span>
                     )}
                   </span>
