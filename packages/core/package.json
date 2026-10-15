@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.133.0",
-    "budoux": "0.9.3"
+    "budoux": "0.9.3",
+    "pinyin-pro": "3.29.4"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
