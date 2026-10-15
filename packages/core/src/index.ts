@@ -7,7 +7,7 @@ export { findActiveCueIndex, findBestOverlap, findCueIndexAtOrBefore } from './s
 export { subtitleContext, type SubtitleContextOptions } from './subtitles/context';
 
 export { tokenize, normalizeWord, type Token } from './text/segment';
-export { baseLanguage, languageName, languageFromFileName, COMMON_LANGUAGES } from './text/language';
+export { baseLanguage, languageName, languageFromFileName, languageFromSubtitleCode, COMMON_LANGUAGES } from './text/language';
 export { pickVoice, type VoiceLike } from './text/voice';
 export { rubyIn, rubyParts, rubySpans, type ReadingToken, type RubyPart, type RubySpan } from './text/ruby';
 
