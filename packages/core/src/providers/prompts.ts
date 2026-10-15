@@ -121,7 +121,10 @@ export function buildExplainPrompt(request: ExplainRequest): string {
     `Video language: ${videoLanguage}`,
     ...lineWithContext(request.sentence, request.context),
     '',
-    `In ${explainIn}: first give a natural translation of the subtitle line, then briefly explain its grammar and any idioms or slang a learner might miss.`,
+    // Glossa already shows the line's translation (and a line in the viewer's own language needs none), so don't repeat it.
+    baseLanguage(request.lang) === baseLanguage(request.explainIn)
+      ? `In ${explainIn}: explain the idioms, slang, wordplay or grammar in this line that a learner might miss. Don't restate or rephrase the whole line.`
+      : `The viewer already sees a translation of this line, so don't translate it. In ${explainIn}: briefly explain its grammar and any idioms or slang a learner might miss, quoting the words you explain.`,
     ...contextNote,
     answerIn(request.explainIn),
   ].join('\n');
