@@ -273,8 +273,10 @@ never starts listening by itself.
   Glossa never uses Chrome's cloud recognizer. Brave and Chromium offer the download but never finish it.
   No Arabic.
 - **A few seconds behind.** Glossa cuts the audio at pauses and recognises each piece, so a line shows up
-  after it was spoken. Use the previous-line key (<kbd>A</kbd>) or rewind to read it. Rewatching a part
-  doesn't add its lines twice.
+  after it was spoken. Use the previous-line key (<kbd>A</kbd>) or rewind to read it, or turn on "Pause
+  after every line", which then pauses as each line arrives. Pieces of one sentence cut by short pauses
+  are joined, so the sentence is translated as a whole. Rewinding shows the lines already heard; that
+  part isn't recognised or translated again.
 - **Accuracy.** Small models make mistakes. Eight short Japanese sentences played through a tab: the base
   model got three exactly right and tiny one or two; the rest sounded right but had the wrong kanji or
   words. Expect more from clear speech without music. Whisper can also invent text for music or noise.
