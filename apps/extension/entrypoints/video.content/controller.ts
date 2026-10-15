@@ -420,6 +420,12 @@ export class VideoController extends SubtitleController {
     this.refreshTracks();
   }
 
+  /** A site file in the viewer's language (Crunchyroll's official translation) translates the transcribed lines too. */
+  protected override showTranscript(): void {
+    super.showTranscript();
+    this.chooseTranslationSource();
+  }
+
   protected override onTranscriptionStart(): void {
     this.refreshTracks();
     this.setNativeFallback(false);

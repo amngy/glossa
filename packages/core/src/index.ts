@@ -1,6 +1,7 @@
 export * from './subtitles/types';
 export { cleanCueText, decodeEntities, stripTags } from './subtitles/clean';
 export { parseTextSubtitles, parseTimestamp } from './subtitles/parse-text';
+export { parseAssSubtitles } from './subtitles/parse-ass';
 export { parseYouTubeJson3 } from './subtitles/parse-youtube';
 export { mergeOverlappingCues } from './subtitles/overlaps';
 export { findActiveCueIndex, findBestOverlap, findCueIndexAtOrBefore } from './subtitles/cue-index';

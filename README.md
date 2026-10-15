@@ -196,6 +196,12 @@ own. Tick **Always on web.stremio.com** in the popup: started from the button in
 subtitles Stremio downloads after that, so pick the subtitle again in Stremio, and it has to guess their
 language from the text. The Stremio desktop app can't load extensions.
 
+**Crunchyroll** (`www.crunchyroll.com`) has no subtitles in the spoken language (no Japanese subtitles for
+Japanese audio), so the study line comes from the sound: transcribe the audio (Alt+T). Glossa downloads
+Crunchyroll's official subtitles in your own language and uses them as the line translation. Tick
+**Always on www.crunchyroll.com** in the popup, so Glossa sees the episode's subtitle list as it loads, and
+turn Crunchyroll's own subtitles off: with them on, it plays a video with the text burned into the picture.
+
 Limits: subtitles a site draws itself (rather than as `<track>` elements) aren't read, so load a file
 instead. Cross-site subtitle tracks only load if the site allows it. If a player puts the bare video
 element into fullscreen, nothing can be drawn over it, so the browser shows the subtitles without clickable
@@ -229,7 +235,8 @@ browser:
 
 On other sites Glossa only reads the subtitle tracks the page already loaded, or the file you pick. It
 sends nothing to those sites. On Stremio Web it reads the subtitle files and list Stremio already downloaded;
-that's no new request either.
+that's no new request either. On Crunchyroll it downloads one subtitle file per episode (two if there's
+one in the spoken language) from Crunchyroll's own servers, the site you're watching.
 
 API keys stay in your browser's extension storage on this device. They aren't synced, and only Glossa's
 background script reads them. Glossa asks for permission to reach a server only when you save a setting
@@ -331,6 +338,7 @@ apps/extension       Browser extension (WXT + Preact, Manifest V3)
   entrypoints/youtube.content/          YouTube's controller: loads captions, sizes the overlay to the player
   entrypoints/video.content/            Any page's HTML5 video: <track>s or a subtitle file. Started from the popup
   entrypoints/stremio-hook.content.ts   Runs in Stremio Web's page; copies the subtitle files its player downloads
+  entrypoints/crunchyroll-hook.content.ts  Runs in Crunchyroll's page; reads each episode's subtitle list
   components/overlay/                   The overlay shared by both: subtitles, toolbar, word card, base controller
   entrypoints/background.ts             Provider calls, cache, API keys
   entrypoints/offscreen, llm-worker.ts  Glossa's on-device model: a hidden page running WebLLM in a worker
