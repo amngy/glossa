@@ -49,10 +49,13 @@ const TRANSLATION_DISPLAY_ORDER: TranslationDisplay[] = ['show', 'blur', 'hide']
 const LINGER_SECONDS = 2;
 /** Recognised lines arrive after they're spoken, so the last one stays up this long, until the next is heard. */
 const TRANSCRIPT_LINGER_SECONDS = 4;
-/** A live line this soon after an unfinished one continues its sentence. */
-const SENTENCE_GAP = 1.5;
+/**
+ * A live line that starts this soon after an unfinished one continues its sentence: the joining pause
+ * (joinSentences' 1.5 s) plus the half second before the first partial arrives.
+ */
+const SENTENCE_GAP = 2;
 /** The finished line before the live one stays above it for this many seconds. */
-const PREVIOUS_LINE_SECONDS = 8;
+export const PREVIOUS_LINE_SECONDS = 8;
 /** At most one live translation per this many ms, so the translation doesn't change with every word. */
 const LIVE_TRANSLATE_MS = 700;
 /** A live line that ends without text stays this long, so it doesn't blink out. */
@@ -106,6 +109,13 @@ export abstract class SubtitleController {
   private liveLine: LiveLine | null = null;
   /** The settled text last sent to the translator, so each growth of it is translated once. */
   private liveTranslated = '';
+  /**
+   * Decided when a live line starts and kept until it ends, so the line doesn't jump between continuing
+   * the last sentence and standing alone while it's spoken: the unfinished sentence it continues (or ''),
+   * and the finished line shown above it.
+   */
+  private liveBefore = '';
+  private livePrevious: number | undefined;
   /** Changes when the live line ends, so late replies for it are dropped. */
   private liveGeneration = 0;
   /** The newest live text waiting for the translator, which gets one request at a time. */
@@ -221,6 +231,8 @@ export abstract class SubtitleController {
     this.liveEndTimer = undefined;
     this.liveLine = null;
     this.liveTranslated = '';
+    this.liveBefore = '';
+    this.livePrevious = undefined;
     this.liveQueued = null;
     this.liveGeneration++;
     if (this.store.get().live) {
@@ -238,21 +250,24 @@ export abstract class SubtitleController {
     if (trackKey !== TRANSCRIPT_KEY || !track) return;
     // The last line ended without text; this is the next one.
     if (this.liveEndTimer !== undefined) this.endLiveLine();
-    const line = (this.liveLine ??= new LiveLine(track.lang));
+    if (!this.liveLine) {
+      this.liveLine = new LiveLine(track.lang);
+      // Fast speech is cut mid-sentence: the line then shows and translates the sentence so far.
+      this.liveBefore = this.openSentence();
+      // The finished line before it stays above, so a quick next sentence doesn't wipe it.
+      const previousIndex = track.cues.length - (this.liveBefore ? 2 : 1);
+      const previous = track.cues[previousIndex];
+      const time = this.video?.currentTime ?? 0;
+      this.livePrevious = previous && time - previous.end < PREVIOUS_LINE_SECONDS ? previousIndex : undefined;
+      if (this.livePrevious !== undefined) this.ensureLineTranslation(this.livePrevious);
+    }
+    const before = this.liveBefore;
     const spoken = text.trim();
-    const { settled, translatable } = line.update(spoken);
-    // Fast speech is cut mid-sentence: the line then shows and translates the sentence so far.
-    const before = this.openSentence();
+    const { settled, translatable } = this.liveLine.update(spoken);
     const shown = joinText(before, spoken);
     const offset = shown.length - spoken.length;
-    // The finished line before it stays above, so a quick next sentence doesn't wipe it.
-    const previousIndex = track.cues.length - (before ? 2 : 1);
-    const previous = track.cues[previousIndex];
-    const time = this.video?.currentTime ?? 0;
-    const showPrevious = !!previous && time - previous.end < PREVIOUS_LINE_SECONDS;
-    if (showPrevious) this.ensureLineTranslation(previousIndex);
     this.store.set({
-      live: { cue: { start: 0, end: 0, text: shown }, settledLength: offset + settled.length, previousIndex: showPrevious ? previousIndex : undefined },
+      live: { cue: { start: 0, end: 0, text: shown }, settledLength: offset + settled.length, previousIndex: this.livePrevious },
     });
     const whole = translatable && joinText(before, translatable);
     if (whole && whole !== this.liveTranslated) {
@@ -297,7 +312,7 @@ export abstract class SubtitleController {
     const generation = this.liveGeneration;
     // The previous translation stays on screen until this one arrives, so the line doesn't flicker.
     // The lines before it, without the unfinished one that `text` already starts with.
-    const earlier = this.openSentence() ? track.cues.slice(0, -1) : track.cues;
+    const earlier = this.liveBefore ? track.cues.slice(0, -1) : track.cues;
     const now = this.video?.currentTime ?? 0;
     const context = subtitleContext([...earlier, { start: now, end: now, text }], earlier.length, { after: 0 });
     return this.translate(text, track.lang, { context }).then(

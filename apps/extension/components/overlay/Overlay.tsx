@@ -5,7 +5,7 @@ import { languageOptions } from '@/lib/languages';
 import { MAX_SUBTITLE_POSITION } from '@/lib/settings';
 import { useStore, type Store } from '@/lib/store';
 import { vocabKey } from '@/lib/vocab-store';
-import { LIVE_INDEX, type SubtitleController } from './controller';
+import { LIVE_INDEX, PREVIOUS_LINE_SECONDS, TRANSCRIPT_KEY, type SubtitleController } from './controller';
 import { FileIcon, MoveIcon, NextIcon, PauseLineIcon, PreviousIcon, ReplayIcon, SettingsIcon, SparkleIcon, TranslateIcon } from './icons';
 import type { CardAnchor, OverlayState } from './state';
 import { WordCard } from './WordCard';
@@ -343,7 +343,14 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
   const live = state.live;
   const cue = live ? live.cue : track && displayIndex >= 0 ? track.cues[displayIndex] : undefined;
   const cueIndex = live ? LIVE_INDEX : displayIndex;
-  const previous = live?.previousIndex !== undefined ? track?.cues[live.previousIndex] : undefined;
+  // Transcribed speech keeps two rows (the line before above the current one), so lines don't jump.
+  const before = track?.cues[displayIndex - 1];
+  const previousIndex = live
+    ? live.previousIndex
+    : state.trackKey === TRANSCRIPT_KEY && cue && before && cue.start - before.end < PREVIOUS_LINE_SECONDS
+      ? displayIndex - 1
+      : undefined;
+  const previous = previousIndex !== undefined ? track?.cues[previousIndex] : undefined;
   const fontSize = Math.round(Math.min(44, Math.max(15, state.playerHeight * 0.042 * settings.fontScale)));
   const canExplain = settings.ai.provider !== 'none' && cue !== undefined;
   const baseline = state.controlsHeight > 0 ? state.controlsHeight : state.playerHeight * 0.035;
@@ -371,10 +378,10 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
           rootRef={rootRef}
           maxRaise={maxRaise}
         />
-        {previous && live?.previousIndex !== undefined && (
+        {previous && previousIndex !== undefined && (
           <div class="glossa-previous">
-            <Line cue={previous} index={live.previousIndex} state={state} controller={controller} anchorFor={anchorFor} />
-            <Translation index={live.previousIndex} state={state} controller={controller} />
+            <Line cue={previous} index={previousIndex} state={state} controller={controller} anchorFor={anchorFor} />
+            <Translation index={previousIndex} state={state} controller={controller} />
           </div>
         )}
         {cue && (
