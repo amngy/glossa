@@ -33,6 +33,23 @@
 
 /* ----- subtitle line ----- */
 
+/* The finished line above the one being recognised: smaller and dimmer, still clickable. */
+.glossa-previous {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.6;
+}
+
+.glossa-previous .glossa-line {
+  font-size: calc(var(--glossa-font-size) * 0.78);
+}
+
+.glossa-previous .glossa-translation {
+  font-size: calc(var(--glossa-font-size) * 0.6);
+}
+
 .glossa-line {
   font-size: var(--glossa-font-size);
   line-height: 1.35;
