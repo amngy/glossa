@@ -203,11 +203,17 @@ Crunchyroll's official subtitles in your own language and uses them as the line 
 **Always on www.crunchyroll.com** in the popup, so Glossa sees the episode's subtitle list as it loads, and
 turn Crunchyroll's own subtitles off: with them on, it plays a video with the text burned into the picture.
 
+**Netflix** (`www.netflix.com`, experimental and **untested**: nobody has tried it on a live account yet, see
+[#9](https://github.com/amngy/glossa/issues/9)). Glossa asks Netflix's player for WebVTT subtitles and
+downloads the ones in the spoken language and in your own language; Netflix's own subtitles are hidden while
+Glossa shows its own. Tick **Always on www.netflix.com** in the popup. Titles whose subtitles are images have
+no text to read; transcribe the audio instead.
+
 Limits: subtitles a site draws itself (rather than as `<track>` elements) aren't read, so load a file
 instead. Cross-site subtitle tracks only load if the site allows it. If a player puts the bare video
 element into fullscreen, nothing can be drawn over it, so the browser shows the subtitles without clickable
-words. Most players put their whole player into fullscreen, and Glossa works there. Netflix and other
-services with protected video aren't supported yet.
+words. Most players put their whole player into fullscreen, and Glossa works there. Prime Video and
+Disney+ aren't supported yet.
 
 ## Privacy
 
@@ -237,7 +243,8 @@ browser:
 On other sites Glossa only reads the subtitle tracks the page already loaded, or the file you pick. It
 sends nothing to those sites. On Stremio Web it reads the subtitle files and list Stremio already downloaded;
 that's no new request either. On Crunchyroll it downloads one subtitle file per episode (two if there's
-one in the spoken language) from Crunchyroll's own servers, the site you're watching.
+one in the spoken language) from Crunchyroll's own servers, the site you're watching. On Netflix it
+downloads up to two subtitle files per title, from the addresses Netflix's own player lists.
 
 API keys stay in your browser's extension storage on this device. They aren't synced, and only Glossa's
 background script reads them. Glossa asks for permission to reach a server only when you save a setting
@@ -341,6 +348,7 @@ apps/extension       Browser extension (WXT + Preact, Manifest V3)
   entrypoints/youtube.content/          YouTube's controller: loads captions, sizes the overlay to the player
   entrypoints/video.content/            Any page's HTML5 video: <track>s or a subtitle file. Started from the popup
   entrypoints/stremio-hook.content.ts   Runs in Stremio Web's page; copies the subtitle files its player downloads
+  entrypoints/netflix-hook.content.ts      Runs in Netflix's page; asks for WebVTT subtitles and lists them
   entrypoints/crunchyroll-hook.content.ts  Runs in Crunchyroll's page; reads each episode's subtitle list
   components/overlay/                   The overlay shared by both: subtitles, toolbar, word card, base controller
   entrypoints/background.ts             Provider calls, cache, API keys

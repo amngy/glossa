@@ -89,6 +89,10 @@ export function fallbackLanguage(): string {
  */
 export abstract class SubtitleController {
   protected video: HTMLVideoElement | null = null;
+  /** Moves playback; a site whose player breaks when `currentTime` is set (Netflix) replaces it. */
+  seek = (video: HTMLVideoElement, seconds: number): void => {
+    video.currentTime = seconds;
+  };
   protected autoPausedIndex = -1;
   /** Set while a translated track is loading, so lines aren't translated one by one meanwhile. */
   protected translationTrackPending = false;
@@ -525,7 +529,7 @@ export abstract class SubtitleController {
     if (!cue || !video) return;
     this.closeCard(false);
     this.autoPausedIndex = -1;
-    video.currentTime = cue.start + 0.01;
+    this.seek(video, cue.start + 0.01);
     void video.play();
   }
 
