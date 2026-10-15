@@ -74,12 +74,12 @@ function Line({
 }) {
   const lang = state.track!.lang;
   const tokens = useMemo(() => tokenize(cue.text, lang), [cue.text, lang]);
-  const wantReadings = state.settings.showReadings && baseLanguage(lang) === 'ja' && settledLength === Infinity;
+  const wantReadings = state.settings.showReadings && ['ja', 'zh'].includes(baseLanguage(lang)) && settledLength === Infinity;
   const [spans, setSpans] = useState<RubySpan[]>([]);
   useEffect(() => {
     let current = true;
     setSpans([]);
-    if (wantReadings) void controller.readingSpans(cue.text).then((found) => current && setSpans(found));
+    if (wantReadings) void controller.readingSpans(cue.text, lang).then((found) => current && setSpans(found));
     return () => {
       current = false;
     };

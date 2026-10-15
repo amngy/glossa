@@ -42,9 +42,10 @@ talks to. You can also run every one of those services yourself.
   as an Anki deck, along with the sentence they appeared in. Mark words you already know with the check on
   the word card: they're never highlighted. In Settings you can also underline every word you haven't
   saved or marked, so the new ones stand out.
-- **Furigana (optional).** Japanese lines can show the reading over each kanji. It needs the "Japanese
-  readings" pack, which you install from Settings; see [Optional packs](#optional-packs). Chrome and Edge only
-  for now.
+- **Readings (optional).** Chinese lines can show pinyin over each character, with the tone marks the word
+  needs (银行 yínháng); it's built in and works offline. Japanese lines can show furigana over each kanji,
+  which needs the "Japanese readings" pack from Settings; see [Optional packs](#optional-packs). Furigana
+  works in Chrome and Edge only for now.
 - **Subtitles from sound (optional).** For a video with no subtitles at all, Glossa can listen to the tab's
   audio and write them on your device, with a Whisper speech pack or Chrome's built-in recognition. Lines
   show up a few seconds after they're spoken, so rewind to read one. On YouTube, an experimental mode

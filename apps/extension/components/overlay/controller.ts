@@ -826,11 +826,11 @@ export abstract class SubtitleController {
 
   private readonly readingCache = new Map<string, Promise<RubySpan[]>>();
 
-  /** Where furigana goes in a Japanese line, from the installed readings pack; empty if it can't be had. */
-  readingSpans(text: string): Promise<RubySpan[]> {
+  /** Where readings go in a line (furigana or pinyin); empty if they can't be had. */
+  readingSpans(text: string, lang: string): Promise<RubySpan[]> {
     let spans = this.readingCache.get(text);
     if (!spans) {
-      spans = sendMessage('readings', { text })
+      spans = sendMessage('readings', { text, lang })
         .then((tokens) => rubySpans(text, tokens))
         .catch(() => {
           this.readingCache.delete(text);

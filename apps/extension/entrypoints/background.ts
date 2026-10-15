@@ -1,5 +1,5 @@
 import { browser, defineBackground } from '#imports';
-import { COMPANION_HOST, decodePcm, LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
+import { baseLanguage, chineseReadings, COMPANION_HOST, decodePcm, LlmDictionary, LlmExplainer, LruCache, WiktionaryDictionary } from '@glossa/core';
 import { COMPANION_STREAM, CompanionSpeechModel, type CompanionStreamMessage } from '@/lib/companion';
 import { isAsrEnvelope, type AsrEnvelope } from '@/lib/asr';
 import { handleMessages, type MessageMap } from '@/lib/messages';
@@ -125,7 +125,9 @@ export default defineBackground(() => {
     onDeviceDownload: ({ model }) => askOffscreen({ type: 'download', model }),
     onDeviceDelete: ({ model }) => askOffscreen({ type: 'delete', model }),
 
-    readings: ({ text }) => cached(`r|${text}`, () => askOffscreen({ type: 'readings', text })),
+    // Pinyin's dictionary is bundled and small enough for this worker; Japanese needs kuromoji in the offscreen document.
+    readings: async ({ text, lang }) =>
+      baseLanguage(lang) === 'zh' ? chineseReadings(text) : cached(`r|${text}`, () => askOffscreen({ type: 'readings', text })),
 
     asrStart,
     async asrHold({ hold }) {
