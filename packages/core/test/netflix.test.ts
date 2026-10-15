@@ -12,7 +12,7 @@ describe('addNetflixWebVtt', () => {
 });
 
 describe('netflixTextTracks', () => {
-  it('lists the WebVTT text tracks, without forced, image or "off" tracks', () => {
+  it('lists text tracks, WebVTT first, without forced, image or "off" tracks', () => {
     const vtt = (urls: unknown) => ({ 'webvtt-lssdh-ios8': { urls } });
     const manifest = {
       result: {
@@ -23,6 +23,7 @@ describe('netflixTextTracks', () => {
           { language: 'ja', isForcedNarrative: true, downloadables: vtt([{ url: 'https://cdn/forced.vtt' }]) },
           { language: 'zh', isImageBased: true },
           { language: 'de', downloadables: {} },
+          { language: 'es', downloadables: { 'imsc1.1': { urls: [{ url: 'https://cdn/es.xml' }] } } },
           { isNoneTrack: true },
         ],
       },
@@ -30,8 +31,9 @@ describe('netflixTextTracks', () => {
     expect(netflixTextTracks(manifest)).toEqual({
       movie: '81234',
       tracks: [
-        { lang: 'ja', url: 'https://cdn/ja.vtt', closedCaptions: false },
-        { lang: 'en', url: 'https://cdn/en.vtt', closedCaptions: true },
+        { lang: 'ja', url: 'https://cdn/ja.vtt', format: 'vtt', closedCaptions: false },
+        { lang: 'en', url: 'https://cdn/en.vtt', format: 'vtt', closedCaptions: true },
+        { lang: 'es', url: 'https://cdn/es.xml', format: 'ttml', closedCaptions: false },
       ],
     });
     expect(netflixTextTracks({ result: { id: 1 } })).toBeNull();

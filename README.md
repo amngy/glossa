@@ -207,8 +207,8 @@ Crunchyroll's official subtitles in your own language and uses them as the line 
 turn Crunchyroll's own subtitles off: with them on, it plays a video with the text burned into the picture.
 
 **Netflix** (`www.netflix.com`, experimental and **untested**: nobody has tried it on a live account yet, see
-[#9](https://github.com/amngy/glossa/issues/9)). Glossa asks Netflix's player for WebVTT subtitles and
-downloads the ones in the spoken language and in your own language; Netflix's own subtitles are hidden while
+[#9](https://github.com/amngy/glossa/issues/9)). Glossa asks Netflix's player for WebVTT subtitles (or reads
+its usual TTML ones) and downloads the ones in the spoken language and in your own language; Netflix's own subtitles are hidden while
 Glossa shows its own. Tick **Always on www.netflix.com** in the popup. Titles whose subtitles are images have
 no text to read; transcribe the audio instead.
 
