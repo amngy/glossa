@@ -12,6 +12,7 @@ import {
   LiveLine,
   languageFromFileName,
   languageName,
+  parseAssSubtitles,
   parseTextSubtitles,
   rubySpans,
   subtitleContext,
@@ -143,13 +144,14 @@ export abstract class SubtitleController {
   protected async readSubtitleFile(file: File): Promise<SubtitleTrack | null> {
     let cues: Cue[];
     try {
-      cues = parseTextSubtitles(await file.text());
+      const text = await file.text();
+      cues = /\.(ass|ssa)$/i.test(file.name) ? parseAssSubtitles(text) : parseTextSubtitles(text);
     } catch (error) {
       this.store.set({ status: 'error', error: `Couldn’t read ${file.name}: ${errorMessage(error)}` });
       return null;
     }
     if (cues.length === 0) {
-      this.store.set({ status: 'error', error: `No subtitles found in ${file.name}. Glossa reads .srt and .vtt files.` });
+      this.store.set({ status: 'error', error: `No subtitles found in ${file.name}. Glossa reads .srt, .vtt and .ass files.` });
       return null;
     }
     const lang =

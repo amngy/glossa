@@ -1,4 +1,4 @@
-import { browser, storage } from '#imports';
+import { browser, storage, type ScriptPublicPath } from '#imports';
 import { originPattern, requiredOrigins } from './permissions';
 import { getSettings } from './settings';
 
@@ -12,10 +12,14 @@ const videoSitesItem = storage.defineItem<string[]>('local:videoSites', { fallba
 /** The content script for any page's videos (entrypoints/video.content). */
 export const VIDEO_SCRIPT = '/content-scripts/video.js';
 const SCRIPT_ID = 'glossa-video';
-/** Copies the subtitle files Stremio Web downloads (entrypoints/stremio-hook.content.ts). It must run before the page's own scripts. */
-const STREMIO_HOOK = '/content-scripts/stremio-hook.js';
-const STREMIO_HOOK_ID = 'glossa-stremio-hook';
-const STREMIO = 'https://web.stremio.com/*';
+/**
+ * Page-context hooks that read a site's subtitle list (entrypoints/*-hook.content.ts), by site. They must
+ * run before the page's own scripts.
+ */
+const HOOKS: Record<string, { id: string; file: ScriptPublicPath }> = {
+  'https://web.stremio.com/*': { id: 'glossa-stremio-hook', file: '/content-scripts/stremio-hook.js' },
+  'https://www.crunchyroll.com/*': { id: 'glossa-crunchyroll-hook', file: '/content-scripts/crunchyroll-hook.js' },
+};
 
 export function getVideoSites(): Promise<string[]> {
   return videoSitesItem.getValue();
@@ -65,14 +69,15 @@ let syncing = Promise.resolve();
 export function syncVideoSites(): Promise<void> {
   syncing = syncing.then(async () => {
     const matches = await grantedVideoSites();
-    const existing = await browser.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID, STREMIO_HOOK_ID] });
+    const existing = await browser.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID, ...Object.values(HOOKS).map((hook) => hook.id)] });
     if (existing.length > 0) await browser.scripting.unregisterContentScripts({ ids: existing.map((script) => script.id) });
     if (matches.length === 0) return;
     await browser.scripting.registerContentScripts([
       { id: SCRIPT_ID, matches, js: [VIDEO_SCRIPT.slice(1)], runAt: 'document_idle', allFrames: true },
-      ...(matches.includes(STREMIO)
-        ? [{ id: STREMIO_HOOK_ID, matches: [STREMIO], js: [STREMIO_HOOK.slice(1)], runAt: 'document_start' as const, world: 'MAIN' as const }]
-        : []),
+      ...matches.flatMap((site) => {
+        const hook = HOOKS[site];
+        return hook ? [{ id: hook.id, matches: [site], js: [hook.file.slice(1)], runAt: 'document_start' as const, world: 'MAIN' as const }] : [];
+      }),
     ]);
   }).catch((error: unknown) => console.warn('Glossa: couldn’t register the video script', error));
   return syncing;
@@ -83,10 +88,9 @@ export function syncVideoSites(): Promise<void> {
  * videos it found. Needs the activeTab grant that opening the popup gives.
  */
 export async function startOnTab(tabId: number): Promise<number> {
-  // Sees only the subtitles Stremio downloads from now on, unless the site is "Always on".
-  if (videoSitePattern((await browser.tabs.get(tabId)).url) === STREMIO) {
-    await browser.scripting.executeScript({ target: { tabId }, files: [STREMIO_HOOK], world: 'MAIN' });
-  }
+  // Injected late, a hook misses what the page loaded before, unless the site is "Always on".
+  const hook = HOOKS[videoSitePattern((await browser.tabs.get(tabId)).url) ?? ''];
+  if (hook) await browser.scripting.executeScript({ target: { tabId }, files: [hook.file], world: 'MAIN' });
   let results;
   try {
     results = await browser.scripting.executeScript({ target: { tabId, allFrames: true }, files: [VIDEO_SCRIPT] });

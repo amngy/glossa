@@ -298,7 +298,7 @@ function Toolbar({
           <input
             ref={fileInput}
             type="file"
-            accept=".srt,.vtt,text/vtt"
+            accept=".srt,.vtt,.ass,.ssa,text/vtt"
             hidden
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
