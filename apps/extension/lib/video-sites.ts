@@ -19,6 +19,7 @@ const SCRIPT_ID = 'glossa-video';
 const HOOKS: Record<string, { id: string; file: ScriptPublicPath }> = {
   'https://web.stremio.com/*': { id: 'glossa-stremio-hook', file: '/content-scripts/stremio-hook.js' },
   'https://www.crunchyroll.com/*': { id: 'glossa-crunchyroll-hook', file: '/content-scripts/crunchyroll-hook.js' },
+  'https://www.netflix.com/*': { id: 'glossa-netflix-hook', file: '/content-scripts/netflix-hook.js' },
 };
 
 export function getVideoSites(): Promise<string[]> {
