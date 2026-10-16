@@ -26,7 +26,7 @@ export interface MessageMap {
    * Starts recognising the speech in a tab's audio. `streamId` comes from tabCapture.getMediaStreamId;
    * without it, the YouTube page sends the audio its player has buffered (look-ahead).
    */
-  asrStart: { request: { tabId: number; streamId?: string; language: string; pack: string }; response: null };
+  asrStart: { request: { tabId: number; streamId?: string; language: string; pack: string; phrases?: string[] }; response: null };
   asrStop: { request: null; response: null };
   /** Pauses recognition while the viewer replays a part that was already transcribed. */
   asrHold: { request: { hold: boolean }; response: null };
