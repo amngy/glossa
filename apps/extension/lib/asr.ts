@@ -46,10 +46,12 @@ export function isAsrEnvelope(message: unknown): message is AsrEnvelope {
 
 /**
  * Audio frames the YouTube content script read from the player's appends, sent straight to the offscreen
- * document. Opus only for now; `description` is the OpusHead, `time` is media time in seconds, both base64.
+ * document. `description` is the OpusHead or AAC's AudioSpecificConfig, `time` is media time in seconds; bytes are base64.
  */
 export interface AheadAudio {
   glossaAhead: true;
+  /** WebCodecs codec string: `opus` or `mp4a.40.*`. */
+  codec: string;
   /** The page's SourceBuffer number; each has its own decoder. */
   buffer: number;
   sampleRate: number;

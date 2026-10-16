@@ -1,7 +1,9 @@
 import { browser } from '#imports';
 import {
   baseLanguage,
+  isMp4Init,
   isWebmInit,
+  Mp4Demuxer,
   learnerDelayTarget,
   parseTextSubtitles,
   parseYouTubeJson3,
@@ -72,7 +74,7 @@ export class YouTubeController extends SubtitleController {
   private observedBar: Element | null = null;
   private resizeObserver?: ResizeObserver;
   /** Look-ahead transcription (#44): a demuxer per audio SourceBuffer in the page, and audio read so far. */
-  private readonly demuxers = new Map<number, WebmDemuxer>();
+  private readonly demuxers = new Map<number, WebmDemuxer | Mp4Demuxer>();
   private aheadBacklog: { videoId?: string; audio: AheadAudio }[] = [];
   private sendingAhead = false;
 
@@ -141,25 +143,28 @@ export class YouTubeController extends SubtitleController {
     else if (data.type === 'audio-append') this.onAudioAppend(data);
   }
 
-  /** Reads Opus frames from an audio append; they go to the offscreen document once transcription runs. */
+  /** Reads Opus (WebM) or AAC (MP4) frames from an audio append; they go to the offscreen document once transcription runs. */
   private onAudioAppend(append: AudioAppend): void {
-    // shortcut: WebM/Opus only; MP4/AAC audio (branded Chrome, Edge) needs its own demuxer.
-    if (!append.mime.startsWith('audio/webm')) return;
+    const mp4 = append.mime.startsWith('audio/mp4');
+    if (!mp4 && !append.mime.startsWith('audio/webm')) return;
     const bytes = new Uint8Array(append.data);
+    const isInit = mp4 ? isMp4Init(bytes) : isWebmInit(bytes);
     let demuxer = this.demuxers.get(append.buffer);
-    if (!demuxer || isWebmInit(bytes)) {
-      demuxer = new WebmDemuxer();
+    if (!demuxer || isInit || demuxer instanceof Mp4Demuxer !== mp4) {
+      demuxer = mp4 ? new Mp4Demuxer() : new WebmDemuxer();
       // Without its init segment, the stream was joined in the middle.
-      if (!isWebmInit(bytes)) demuxer.resync();
+      if (!isInit) demuxer.resync();
       this.demuxers.set(append.buffer, demuxer);
     }
     const frames = demuxer.push(bytes);
     if (append.replayed) demuxer.resync();
     const track = demuxer.track;
+    const codec = track?.codec === 'A_OPUS' ? 'opus' : track?.codec.startsWith('mp4a.') ? track.codec : null;
     // Ads and AI dubs are read (to keep the stream in step) but not transcribed.
-    if (append.ad || append.dubbed || frames.length === 0 || track?.codec !== 'A_OPUS') return;
+    if (append.ad || append.dubbed || frames.length === 0 || !track || !codec) return;
     const audio: AheadAudio = {
       glossaAhead: true,
+      codec,
       buffer: append.buffer,
       sampleRate: track.sampleRate ?? 48000,
       channels: track.channels ?? 2,

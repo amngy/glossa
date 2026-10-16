@@ -149,7 +149,7 @@ export class AsrSession {
         error: () => this.ahead.delete(audio.buffer),
       });
       decoder.configure({
-        codec: 'opus',
+        codec: audio.codec,
         sampleRate: audio.sampleRate,
         numberOfChannels: audio.channels,
         description: audio.description ? fromBase64(audio.description) : undefined,
