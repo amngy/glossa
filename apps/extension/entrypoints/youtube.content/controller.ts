@@ -178,7 +178,7 @@ export class YouTubeController extends SubtitleController {
 
   /** Straight to the offscreen document, which only takes it while it transcribes this tab. */
   private sendAhead(audio: AheadAudio): void {
-    void browser.runtime.sendMessage(audio).catch(() => {});
+    void browser.runtime.sendMessage({ ...audio, playhead: this.video?.currentTime } satisfies AheadAudio).catch(() => {});
   }
 
   private onTracks(videoId: string | null, tracks: CaptionTrackInfo[]): void {

@@ -12,6 +12,8 @@ const MAX_BACKLOG = 4;
 const MAX_AHEAD_BACKLOG = 40;
 /** Decoded audio that doesn't continue the previous chunk within this (seconds) starts a new run, e.g. after a seek. */
 const MAX_GAP = 0.1;
+/** Look-ahead frames further apart than this (seconds) are from different places in the video, e.g. after a seek. */
+const MAX_INPUT_GAP = 1;
 
 interface Waiting {
   /** Where the utterance starts: wall-clock ms for captured audio, media seconds for look-ahead audio. */
@@ -22,6 +24,9 @@ interface Waiting {
 /** One SourceBuffer's look-ahead audio, decoded and cut at pauses on its media timeline. */
 interface AheadStream {
   decoder: AudioDecoder;
+  config: AudioDecoderConfig;
+  /** Media time of the last frame given to the decoder. */
+  lastInput: number;
   endpointer: Endpointer;
   /** Media time of the endpointer's first sample, and of the end of the audio fed so far. */
   start: number;
@@ -61,6 +66,8 @@ export class AsrSession {
   private companion = false;
   private live: Browser.runtime.Port | null = null;
   private readonly ahead = new Map<number, AheadStream>();
+  /** The video's time with the latest look-ahead audio. */
+  private playhead = 0;
 
   constructor(
     readonly tabId: number,
@@ -141,6 +148,7 @@ export class AsrSession {
   /** Look-ahead audio from the page. Each SourceBuffer gets its own decoder and endpointer. */
   feed(audio: AheadAudio): void {
     if (this.stopped || !this.fromPage) return;
+    if (audio.playhead !== undefined) this.playhead = audio.playhead;
     let stream = this.ahead.get(audio.buffer);
     if (!stream) {
       const decoder = new AudioDecoder({
@@ -148,16 +156,24 @@ export class AsrSession {
         // The buffer's next frames start a new decoder.
         error: () => this.ahead.delete(audio.buffer),
       });
-      decoder.configure({
+      const config = {
         codec: audio.codec,
         sampleRate: audio.sampleRate,
         numberOfChannels: audio.channels,
         description: audio.description ? fromBase64(audio.description) : undefined,
-      });
-      stream = { decoder, endpointer: new Endpointer({ sampleRate: SAMPLE_RATE }), start: 0, end: -Infinity };
+      };
+      decoder.configure(config);
+      stream = { decoder, config, lastInput: -Infinity, endpointer: new Endpointer({ sampleRate: SAMPLE_RATE }), start: 0, end: -Infinity };
       this.ahead.set(audio.buffer, stream);
     }
     for (const frame of audio.frames) {
+      // Chrome's decoder times its output by counting on from its first frame, so after a seek it would carry
+      // on as if nothing happened; starting it afresh makes it take the new frame's time.
+      if (Math.abs(frame.time - stream.lastInput) > MAX_INPUT_GAP && stream.lastInput !== -Infinity) {
+        stream.decoder.reset();
+        stream.decoder.configure(stream.config);
+      }
+      stream.lastInput = frame.time;
       stream.decoder.decode(new EncodedAudioChunk({ type: 'key', timestamp: Math.round(frame.time * 1e6), data: fromBase64(frame.data) }));
     }
   }
@@ -214,6 +230,10 @@ export class AsrSession {
   }
 
   private pump(): void {
+    // Speech the viewer already played past (audio buffered before a seek, or the backlog at start) would only delay the lines ahead.
+    while (this.queue[0]?.startMedia !== undefined && this.queue[0].startMedia + this.queue[0].samples.length / SAMPLE_RATE < this.playhead) {
+      this.queue.shift();
+    }
     const next = this.queue[0];
     if (this.busy || !this.ready || !next || !(this.worker || this.companion)) return;
     this.queue.shift();
