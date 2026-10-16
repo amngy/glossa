@@ -16,6 +16,7 @@ apps/extension/public/webllm/
 
 # Written by apps/companion/install-windows.ps1
 apps/companion/glossa-companion.cmd
+apps/companion/glossa-companion-server.cmd
 apps/companion/com.glossa.companion.json
 
 # Translation check results (packages/core/eval)
