@@ -17,7 +17,7 @@ export { rubyIn, rubyParts, rubySpans, type ReadingToken, type RubyPart, type Ru
 export { chineseReadings } from './text/pinyin';
 export { romajiSpans } from './text/romaji';
 
-export { LiveLine, type LiveText } from './asr/live';
+export { learnerDelayTarget, LiveLine, type LiveText } from './asr/live';
 export { endsSentence, joinSentences, joinText, type SentenceOptions } from './asr/sentences';
 export {
   addTranscribedCues,

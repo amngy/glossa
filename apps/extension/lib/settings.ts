@@ -23,6 +23,8 @@ export interface Settings {
   spokenLanguage: string;
   /** On YouTube, transcribe from the audio the player has already buffered, ahead of the playhead (#44). Experimental. */
   lookAhead: boolean;
+  /** Seconds to sit behind the live edge when transcribing a live stream with look-ahead, so there is audio to read ahead. 0: off. */
+  liveDelay: number;
   /** Recognise speech with Chrome's on-device engine instead of a Whisper pack. Off until the viewer opts in. */
   chromeSpeech: boolean;
   /** Send audio to the desktop companion (apps/companion) when it's reachable. Needs nativeMessaging. */
@@ -73,6 +75,7 @@ export const DEFAULT_SETTINGS: Settings = {
   nativeLanguage: defaultNativeLanguage(),
   spokenLanguage: '',
   lookAhead: false,
+  liveDelay: 0,
   chromeSpeech: false,
   companion: false,
   translator: 'browser',

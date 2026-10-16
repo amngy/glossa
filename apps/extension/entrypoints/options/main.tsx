@@ -725,6 +725,16 @@ function Options() {
                   <input type="checkbox" checked={settings.lookAhead} onChange={(event) => change({ lookAhead: event.currentTarget.checked })} />
                   On YouTube, transcribe ahead from the audio the player has already loaded (experimental)
                 </label>
+                {settings.lookAhead && (
+                  <Field label="Live streams: stay behind the live edge">
+                    <select value={settings.liveDelay} onChange={(event) => change({ liveDelay: Number(event.currentTarget.value) })}>
+                      <option value={0}>Off (play at the live edge)</option>
+                      <option value={10}>10 seconds</option>
+                      <option value={20}>20 seconds</option>
+                      <option value={30}>30 seconds</option>
+                    </select>
+                  </Field>
+                )}
               </div>
               {browser.offscreen && <CompanionSetup enabled={settings.companion} onToggle={(on) => change({ companion: on })} />}
               {browser.offscreen && (

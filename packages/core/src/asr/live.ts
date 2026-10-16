@@ -1,5 +1,16 @@
 import { tokenize } from '../text/segment';
 
+/**
+ * Where to seek so a live stream plays `delay` seconds behind its live edge, or null when it already
+ * does (or there is nothing to seek in). Look-ahead needs audio ahead of the playhead, which a stream
+ * sitting at the live edge never has.
+ */
+export function learnerDelayTarget(current: number, seekableStart: number, seekableEnd: number, delay: number): number | null {
+  if (!(delay > 0) || !Number.isFinite(seekableStart) || !Number.isFinite(seekableEnd)) return null;
+  const target = Math.max(seekableStart, seekableEnd - delay);
+  return current > target ? target : null;
+}
+
 /** A live line split by how sure the recogniser is. `settled` and `translatable` are prefixes of `text`. */
 export interface LiveText {
   text: string;
