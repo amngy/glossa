@@ -314,7 +314,8 @@ never starts listening by itself.
   Glossa then reads the audio YouTube's player has already downloaded, usually seconds to half a minute
   before it plays, so lines can be ready before they're spoken. No tab capture and no extra download:
   Glossa reads bytes the player already has. It switches YouTube's AI-dubbed audio back to the original
-  track and skips ads. It reads Opus audio only for now; if your browser gets AAC audio from YouTube
+  track and skips ads. On a live stream, "stay behind the live edge" (10–30 s, off by default) steps back from
+  the live edge when listening starts, so there is audio to read ahead. It reads Opus audio only for now; if your browser gets AAC audio from YouTube
   (possible in branded Chrome or Edge), no lines appear. With the [desktop companion](#desktop-companion-optional-windows)
   turned on, this audio is recognised by `large-v3` on your GPU instead, which is more accurate, and no
   speech pack is needed. If the companion doesn't answer, Glossa says so and uses the speech pack.

@@ -2,6 +2,7 @@ import { browser } from '#imports';
 import {
   baseLanguage,
   isWebmInit,
+  learnerDelayTarget,
   parseTextSubtitles,
   parseYouTubeJson3,
   WebmDemuxer,
@@ -233,6 +234,19 @@ export class YouTubeController extends SubtitleController {
     this.postToPage({ type: 'audio-tap', on: true });
     this.sendingAhead = true;
     for (const { videoId, audio } of this.aheadBacklog) if (videoId === this.videoId) this.sendAhead(audio);
+    this.delayLiveStream();
+  }
+
+  /** Learner delay (#46): on a live stream, step back from the live edge so look-ahead has audio to read. */
+  private delayLiveStream(): void {
+    const video = this.video;
+    if (!video || video.seekable.length === 0) return;
+    const { length } = video.seekable;
+    // shortcut: "live" = non-finite duration or the player's live marker; both unchecked on a real stream.
+    const live = !Number.isFinite(video.duration) || !!document.querySelector('#movie_player .ytp-live');
+    if (!live) return;
+    const target = learnerDelayTarget(video.currentTime, video.seekable.start(0), video.seekable.end(length - 1), this.store.get().settings.liveDelay);
+    if (target !== null) video.currentTime = target;
   }
 
   selectTrack(key: string): void {
