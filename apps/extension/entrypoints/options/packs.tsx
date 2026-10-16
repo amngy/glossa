@@ -135,16 +135,30 @@ export function ChromeSpeechSetup({ enabled, language, onToggle }: { enabled: bo
 
 /** Opt-in switch for the desktop companion (apps/companion), with a connection check. */
 export function CompanionSetup({ enabled, onToggle }: { enabled: boolean; onToggle: (on: boolean) => void }) {
-  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
-  useEffect(() => {
-    if (!enabled) return;
+  const [status, setStatus] = useState<{ ok: boolean; text: string; needsPermission?: boolean } | null>(null);
+  const check = () => {
     setStatus({ ok: true, text: 'Connecting…' });
     // The first answer waits for the companion to load its model, a few seconds.
     sendMessage('companionPing', null).then(
       ({ engine, live }) => setStatus({ ok: true, text: `Connected: ${engine}${live ? `, live: ${live}` : ''}.` }),
-      () => setStatus({ ok: false, text: 'Not found.' }),
+      async (error: unknown) => {
+        // Reloading or rebuilding an unpacked extension drops its optional permissions, which looks like a missing companion.
+        const granted = await browser.permissions.contains({ permissions: ['nativeMessaging'] }).catch(() => true);
+        const detail = error instanceof Error && error.message ? ` ${error.message}` : '';
+        setStatus(
+          granted
+            ? { ok: false, text: `Not found.${detail}` }
+            : { ok: false, needsPermission: true, text: 'Glossa lost the permission to talk to the companion (this happens when the extension is reloaded).' },
+        );
+      },
     );
+  };
+  useEffect(() => {
+    if (enabled) check();
   }, [enabled]);
+
+  // Asked from the click itself: browsers need the user gesture.
+  const grant = () => void browser.permissions.request({ permissions: ['nativeMessaging'] }).then((granted) => granted && check());
 
   const toggle = (on: boolean) => {
     if (!on) return onToggle(false);
@@ -165,7 +179,15 @@ export function CompanionSetup({ enabled, onToggle }: { enabled: boolean; onTogg
       {enabled && status && (
         <p class={status.ok ? 'ok' : 'error'}>
           {status.text}
-          {!status.ok && (
+          {status.needsPermission && (
+            <>
+              {' '}
+              <button class="button" onClick={grant}>
+                Allow it again
+              </button>
+            </>
+          )}
+          {!status.ok && !status.needsPermission && (
             <>
               {' '}
               See{' '}
