@@ -23,6 +23,17 @@ export function localSpeechTag(language: string): string | undefined {
   return LOCAL_TAGS[language.split('-')[0]?.toLowerCase() ?? ''];
 }
 
+/**
+ * Words and names to bias recognition toward: the video title, then the viewer's saved words in
+ * `language`, deduplicated and capped (Chrome reads a short list). Saved words come last-saved first.
+ */
+export function speechPhrases(title: string | undefined, saved: { word: string; lang: string }[], language: string, max = 50): string[] {
+  const base = language.split('-')[0]?.toLowerCase();
+  const words = saved.filter((w) => w.lang.split('-')[0]?.toLowerCase() === base).map((w) => w.word.trim()).reverse();
+  const all = [title?.trim() ?? '', ...words].filter(Boolean);
+  return [...new Set(all)].slice(0, max);
+}
+
 export interface LocalRecognizer {
   processLocally?: boolean;
   start(track: MediaStreamTrack): void;

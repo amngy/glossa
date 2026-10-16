@@ -47,7 +47,7 @@ export default defineBackground(() => {
     await browser.runtime.openOptionsPage();
   });
 
-  async function asrStart({ tabId, streamId, language, pack }: MessageMap['asrStart']['request']): Promise<null> {
+  async function asrStart({ tabId, streamId, language, pack, phrases }: MessageMap['asrStart']['request']): Promise<null> {
     let notice: string | undefined;
     // Audio goes to the companion if it answers (tab audio only if it has a live engine); otherwise to the pack.
     if ((await getSettings()).companion) {
@@ -60,7 +60,7 @@ export default defineBackground(() => {
         notice = 'The desktop companion can’t take this audio, so the speech pack is used. Loading it…';
       }
     }
-    await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack, notice });
+    await askOffscreen({ type: 'asr-start', tabId, streamId, language, pack, notice, phrases });
     return null;
   }
 

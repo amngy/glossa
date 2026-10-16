@@ -17,6 +17,7 @@ interface Recognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   processLocally?: boolean;
+  phrases?: unknown[];
   start(track: MediaStreamTrack): void;
   stop(): void;
 }
@@ -29,6 +30,9 @@ interface ResultEvent extends Event {
   resultIndex: number;
   results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
 }
+
+/** `SpeechRecognitionPhrase` (Chrome 142+); older builds lack it and recognise without the bias. */
+const phraseClass = () => (globalThis as { SpeechRecognitionPhrase?: new (phrase: string, boost?: number) => unknown }).SpeechRecognitionPhrase;
 
 const api = () => (globalThis as { SpeechRecognition?: RecognitionStatic }).SpeechRecognition;
 
@@ -67,7 +71,7 @@ export class ChromeSpeechSession {
     private readonly onEnd: () => void,
   ) {}
 
-  async start(streamId: string, language: string): Promise<void> {
+  async start(streamId: string, language: string, phrases: string[] = []): Promise<void> {
     const tag = localSpeechTag(language);
     if (!tag) throw new Error('Chrome’s on-device speech recognition doesn’t cover this language.');
     this.emit({ kind: 'loading', message: 'Starting Chrome’s speech recognition…' });
@@ -98,6 +102,8 @@ export class ChromeSpeechSession {
     recognition.lang = tag;
     recognition.continuous = true;
     recognition.interimResults = true;
+    const Phrase = phraseClass();
+    if (Phrase && phrases.length > 0) recognition.phrases = phrases.map((phrase) => new Phrase(phrase, 2));
     recognition.addEventListener('result', (event) => this.onResult(event as ResultEvent));
     recognition.addEventListener('error', (event) =>
       this.fail(`Speech recognition stopped: ${(event as Event & { error?: string }).error ?? 'unknown error'}`),
