@@ -1,7 +1,6 @@
 import { browser } from '#imports';
 import {
   COMPANION_HOST,
-  COMPANION_PORT,
   encodePcm,
   parseCompanionReply,
   type CompanionReply,
@@ -15,70 +14,24 @@ export const COMPANION_STREAM = 'glossa-companion-stream';
 export type CompanionStreamMessage = { language: string } | { pcm: string };
 
 type WithoutId<T> = T extends unknown ? Omit<T, 'id'> : never;
-
-/** The part of a native-messaging port this class uses, so a local WebSocket can stand in for it. */
-interface CompanionPort {
-  postMessage(message: unknown): void;
-  disconnect(): void;
-  onMessage: { addListener(listener: (message: unknown) => void): void };
-  /** A native port passes itself; the local one passes why it closed. */
-  onDisconnect: { addListener(listener: (detail?: unknown) => void): void };
-}
-
-/** The companion started with --serve: only this extension may connect (the server checks the Origin). */
-function connectLocal(): CompanionPort {
-  const socket = new WebSocket(`ws://127.0.0.1:${COMPANION_PORT}`);
-  const messages: ((message: unknown) => void)[] = [];
-  const closed: ((detail?: string) => void)[] = [];
-  const queued: string[] = [];
-  socket.onopen = () => queued.splice(0).forEach((text) => socket.send(text));
-  socket.onmessage = ({ data }) => {
-    // The server's first frame is a hello, not a reply; parseCompanionReply ignores it.
-    const message: unknown = JSON.parse(String(data));
-    messages.forEach((listener) => listener(message));
-  };
-  socket.onclose = () => closed.forEach((listener) => listener('nothing is listening on the local port'));
-  return {
-    disconnect: () => socket.close(),
-    postMessage: (message) => {
-      const text = JSON.stringify(message);
-      if (socket.readyState === WebSocket.OPEN) socket.send(text);
-      else queued.push(text);
-    },
-    onMessage: { addListener: (listener) => void messages.push(listener) },
-    onDisconnect: { addListener: (listener) => void closed.push(listener) },
-  };
-}
-
 type Waiting = { resolve: (reply: CompanionReply) => void; reject: (error: Error) => void };
 
 /**
- * Speech recognition by the desktop companion (apps/companion), over native messaging
- * or, when `local` is set, over a WebSocket on 127.0.0.1.
+ * Speech recognition by the desktop companion (apps/companion), over native messaging.
  * Audio goes to a program on this computer; it never touches the network.
  */
 export class CompanionSpeechModel implements SpeechModel {
   readonly name = 'Desktop companion';
-  private port: CompanionPort | null = null;
-  private useLocal = false;
+  private port: ReturnType<typeof browser.runtime.connectNative> | null = null;
   private waiting = new Map<number, Waiting>();
   /** Open live streams, by the id of their stream-start. */
   private streams = new Map<number, (reply: CompanionReply) => void>();
   private nextId = 1;
 
-  /** Switching transports drops the open connection; the next request opens the new one. */
-  set local(on: boolean) {
-    if (on === this.useLocal) return;
-    this.useLocal = on;
-    const old = this.port;
-    this.port = null;
-    old?.disconnect();
-  }
-
   private connect() {
     if (this.port) return this.port;
-    // Native messaging needs the optional "nativeMessaging" permission; the browser throws without it.
-    const port: CompanionPort = this.useLocal ? connectLocal() : browser.runtime.connectNative(COMPANION_HOST);
+    // Needs the optional "nativeMessaging" permission; the browser throws without it.
+    const port = browser.runtime.connectNative(COMPANION_HOST);
     port.onMessage.addListener((message: unknown) => {
       const reply = parseCompanionReply(message);
       if (reply && 'id' in reply) {
@@ -87,8 +40,8 @@ export class CompanionSpeechModel implements SpeechModel {
         this.waiting.delete(reply.id);
       }
     });
-    port.onDisconnect.addListener((why) => {
-      const detail = typeof why === 'string' ? why : browser.runtime.lastError?.message;
+    port.onDisconnect.addListener(() => {
+      const detail = browser.runtime.lastError?.message;
       const error = new Error(
         `The Glossa desktop companion isn’t running${detail ? ` (${detail})` : ''}. See the README to install it.`,
       );
@@ -96,7 +49,7 @@ export class CompanionSpeechModel implements SpeechModel {
       this.waiting.clear();
       for (const [id, onReply] of this.streams) onReply({ id, type: 'error', message: error.message });
       this.streams.clear();
-      if (this.port === port) this.port = null;
+      this.port = null;
     });
     return (this.port = port);
   }

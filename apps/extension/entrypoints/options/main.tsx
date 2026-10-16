@@ -736,7 +736,7 @@ function Options() {
                   </Field>
                 )}
               </div>
-              {browser.offscreen && <CompanionSetup enabled={settings.companion} local={settings.companionLocal} onToggle={(on) => change({ companion: on })} onLocal={(on) => change({ companionLocal: on })} />}
+              {browser.offscreen && <CompanionSetup enabled={settings.companion} onToggle={(on) => change({ companion: on })} />}
               {browser.offscreen && (
                 <ChromeSpeechSetup enabled={settings.chromeSpeech} language={settings.spokenLanguage} onToggle={(on) => change({ chromeSpeech: on })} />
               )}

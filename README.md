@@ -189,14 +189,6 @@ CUDA 13), [uv](https://docs.astral.sh/uv/) and Chrome, Edge or Brave.
 The companion only runs while the browser has it open, has no window, and reads audio only from Glossa
 over the browser's native messaging. After step 1 it never goes online.
 
-**If the browser says "Specified native messaging host not found"** although step 1 ran (some security software
-or launch methods stop the browser from looking the host up), use a local port instead. Run the installer again
-with `-Autostart` (it writes `glossa-companion-server.cmd` and starts it when you sign in; without the flag, start
-that file yourself), then in the same settings turn on **Reach it over a local port instead**. The server listens on
-`127.0.0.1:47843` only and accepts a connection only from this extension's origin on a local host name, so web pages
-and other computers can't use it. It stays running (minimized) until you sign out, and takes about 1 GB of memory
-with the model loaded.
-
 ## Other sites
 
 Glossa doesn't run on other sites until you ask it to, so it needs no access to them at install time.
@@ -262,7 +254,7 @@ browser:
   Nothing is requested from it otherwise.
 - **Desktop companion** (optional): the audio goes to a program on your computer, never over the
   network. Only the one-time installs reach out: PyPI (Python packages, CUDA libraries), Hugging Face
-  (models) and GitHub (NVIDIA's NeMo-Speech.cpp release). With the local-port option the audio goes to `127.0.0.1` on your own computer, nowhere else.
+  (models) and GitHub (NVIDIA's NeMo-Speech.cpp release).
 - **YouTube**: Glossa reads the caption files the YouTube player already downloads, and, with
   "transcribe ahead" on, the audio it already downloaded. Neither is a new request.
 
@@ -371,7 +363,7 @@ packages/core        Platform-independent logic, no browser APIs
   src/providers      Translators, Wiktionary, AI models (Claude, OpenAI-compatible, the browser's built-in model), prompts
   src/asr            Speech: cutting audio at pauses, WebM demuxing, live lines, the companion protocol
   src/vocab.ts       CSV and Anki export
-apps/companion       Desktop companion: GPU speech recognition over native messaging or a local port (Python, Windows installer)
+apps/companion       Desktop companion: GPU speech recognition over native messaging (Python, Windows installer)
 apps/extension       Browser extension (WXT + Preact, Manifest V3)
   entrypoints/youtube-hook.content.ts   Runs in YouTube's page; sees caption requests, drives the player API
   entrypoints/youtube.content/          YouTube's controller: loads captions, sizes the overlay to the player

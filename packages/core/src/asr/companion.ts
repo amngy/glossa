@@ -2,8 +2,6 @@ import type { SpeechSegment } from '../providers/types';
 
 /** Name the companion registers under with the browser's native messaging. */
 export const COMPANION_HOST = 'com.glossa.companion';
-/** Port the companion listens on (127.0.0.1 only) when started with --serve. */
-export const COMPANION_PORT = 47843;
 
 /**
  * Messages between the extension and the desktop companion, one JSON object each (the browser frames them).
