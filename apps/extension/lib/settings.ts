@@ -41,6 +41,8 @@ export interface Settings {
     onDeviceModel: string;
   };
   translationDisplay: TranslationDisplay;
+  /** With transcribed speech, also translate the line kept above the current one. */
+  showPreviousTranslation: boolean;
   pauseOnHover: boolean;
   autoPause: boolean;
   /** Underline words that are neither saved nor marked as known, so new ones stand out. */
@@ -82,6 +84,7 @@ export const DEFAULT_SETTINGS: Settings = {
   libreTranslateUrl: 'http://localhost:5000',
   ai: { provider: 'none', model: '', baseUrl: 'http://localhost:11434/v1', onDeviceModel: DEFAULT_ON_DEVICE_MODEL },
   translationDisplay: 'show',
+  showPreviousTranslation: false,
   pauseOnHover: true,
   autoPause: false,
   markNewWords: false,
