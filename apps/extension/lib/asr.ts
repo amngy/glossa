@@ -52,6 +52,8 @@ export interface AheadAudio {
   glossaAhead: true;
   /** WebCodecs codec string: `opus` or `mp4a.40.*`. */
   codec: string;
+  /** The video's time when this was sent; speech already behind it isn't transcribed. */
+  playhead?: number;
   /** The page's SourceBuffer number; each has its own decoder. */
   buffer: number;
   sampleRate: number;
