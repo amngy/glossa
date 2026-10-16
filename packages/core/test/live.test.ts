@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { LiveLine } from '../src';
+import { learnerDelayTarget, LiveLine } from '../src';
+
+describe('learnerDelayTarget', () => {
+  it('seeks back from the live edge, but never before the start of the window', () => {
+    expect(learnerDelayTarget(1000, 0, 1000, 20)).toBe(980);
+    expect(learnerDelayTarget(1000, 995, 1000, 20)).toBe(995);
+  });
+  it('leaves a viewer who is already far enough behind, and does nothing when off or unseekable', () => {
+    expect(learnerDelayTarget(900, 0, 1000, 20)).toBeNull();
+    expect(learnerDelayTarget(1000, 0, 1000, 0)).toBeNull();
+    expect(learnerDelayTarget(5, 0, Infinity, 20)).toBeNull();
+  });
+});
 
 describe('LiveLine', () => {
   it('settles words once two updates agree and holds back the last ones for translation', () => {
