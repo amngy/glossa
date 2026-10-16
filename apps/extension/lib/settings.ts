@@ -29,6 +29,8 @@ export interface Settings {
   chromeSpeech: boolean;
   /** Send audio to the desktop companion (apps/companion) when it's reachable. Needs nativeMessaging. */
   companion: boolean;
+  /** Reach the companion over 127.0.0.1 (started with --serve) instead of native messaging, which some PCs block. */
+  companionLocal: boolean;
   translator: TranslatorChoice;
   libreTranslateUrl: string;
   ai: {
@@ -78,6 +80,7 @@ export const DEFAULT_SETTINGS: Settings = {
   liveDelay: 0,
   chromeSpeech: false,
   companion: false,
+  companionLocal: false,
   translator: 'browser',
   libreTranslateUrl: 'http://localhost:5000',
   ai: { provider: 'none', model: '', baseUrl: 'http://localhost:11434/v1', onDeviceModel: DEFAULT_ON_DEVICE_MODEL },
