@@ -70,8 +70,13 @@ def read_pcm(message):
 
 
 def transcribe(model, message):
+    # Over music and noise, Whisper writes subtitle credits ("Altyazı M.K."); the VAD removes non-speech first.
     segments, info = model.transcribe(
-        read_pcm(message), language=message.get("language") or None, beam_size=5, condition_on_previous_text=False
+        read_pcm(message),
+        language=message.get("language") or None,
+        beam_size=5,
+        condition_on_previous_text=False,
+        vad_filter=True,
     )
     return {
         "language": info.language,
