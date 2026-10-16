@@ -36,7 +36,6 @@ export { localSpeechTag, speechPhrases, startLocalOnly, type LocalRecognizer } f
 
 export {
   COMPANION_HOST,
-  COMPANION_PORT,
   decodePcm,
   encodePcm,
   parseCompanionReply,

@@ -4,28 +4,20 @@
 # ///
 """Glossa desktop companion: speech recognition on your own GPU, for the Glossa browser extension.
 
-Speaks Chrome native messaging on stdin/stdout (4-byte length + JSON). With `--serve` it instead listens on
-127.0.0.1 as a WebSocket, for browsers that can't find the native host (#88). Nothing here reaches beyond
-this computer, except `--download`, which fetches the model once. Protocol: packages/core/src/asr/companion.ts.
+Speaks Chrome native messaging on stdin/stdout (4-byte length + JSON). Nothing here uses the network,
+except `--download`, which fetches the model once. Protocol: packages/core/src/asr/companion.ts.
 Live (stream-*) jobs use Nemotron 3.5 streaming through NVIDIA's NeMo-Speech.cpp, which
 install-windows.ps1 -Download puts in ./nemotron.
 """
 import base64
 import ctypes
 import importlib.util
-import hashlib
 import json
 import os
-import socket
 import struct
 import sys
-import threading
 
 MODEL = os.environ.get("GLOSSA_MODEL", "large-v3")
-PORT = int(os.environ.get("GLOSSA_PORT", "47843"))  # keep in step with COMPANION_PORT in packages/core
-# Only this extension may connect: its ID is pinned by `key` in apps/extension/wxt.config.ts.
-EXTENSION_ORIGIN = "chrome-extension://ifjnjihdpegigjmpamidpemajjhabbme"
-MAX_MESSAGE = 64 * 1024 * 1024
 NEMOTRON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nemotron")
 NEMOTRON_BIN = os.path.join(NEMOTRON, "nemo-speech-0.2.0-windows-x86_64-cuda", "bin")
 NEMOTRON_MODEL = os.path.join(NEMOTRON, "nemotron-3.5-asr-streaming-0.6b.q8_0.gguf")
@@ -233,112 +225,6 @@ def handle(model, engine, streams, message):
     raise ValueError(f"unknown message type {kind!r}")
 
 
-def recv_exact(conn, size):
-    data = b""
-    while len(data) < size:
-        chunk = conn.recv(size - len(data))
-        if not chunk:
-            raise EOFError
-        data += chunk
-    return data
-
-
-def accept_websocket(conn):
-    """The WebSocket handshake, for the Glossa extension only. Browsers set Origin and Host themselves, so a web page can't pass for it."""
-    data = b""
-    while b"\r\n\r\n" not in data:
-        chunk = conn.recv(4096)
-        if not chunk or len(data) > 16384:
-            return False
-        data += chunk
-    lines = data.split(b"\r\n\r\n")[0].decode("latin-1").split("\r\n")[1:]
-    headers = {k.strip().lower(): v.strip() for k, v in (line.split(":", 1) for line in lines if ":" in line)}
-    if (
-        headers.get("origin") != EXTENSION_ORIGIN
-        or headers.get("host") not in (f"127.0.0.1:{PORT}", f"localhost:{PORT}")  # a rebound DNS name would show up here
-        or headers.get("upgrade", "").lower() != "websocket"
-        or "sec-websocket-key" not in headers
-    ):
-        conn.sendall(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n")
-        return False
-    key = headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-    accept = base64.b64encode(hashlib.sha1(key.encode()).digest()).decode()
-    conn.sendall(f"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n".encode())
-    return True
-
-
-def send_frame(conn, opcode, payload):
-    size = len(payload)
-    if size < 126:
-        length = bytes([size])
-    elif size < 65536:
-        length = b"\x7e" + struct.pack(">H", size)
-    else:
-        length = b"\x7f" + struct.pack(">Q", size)
-    conn.sendall(bytes([0x80 | opcode]) + length + payload)
-
-
-def read_text_message(conn):
-    """The next text message from the browser (fragments joined, pings answered), or None once it closes."""
-    message = b""
-    while True:
-        first, second = recv_exact(conn, 2)
-        opcode, size = first & 0x0F, second & 0x7F
-        if size == 126:
-            (size,) = struct.unpack(">H", recv_exact(conn, 2))
-        elif size == 127:
-            (size,) = struct.unpack(">Q", recv_exact(conn, 8))
-        if size > MAX_MESSAGE:
-            raise ValueError("message too large")
-        mask = recv_exact(conn, 4) if second & 0x80 else b""  # browsers always mask
-        data = recv_exact(conn, size)
-        if mask and size:
-            data = (int.from_bytes(data, "big") ^ int.from_bytes((mask * (size // 4 + 1))[:size], "big")).to_bytes(size, "big")
-        if opcode == 8:
-            return None
-        if opcode == 9:
-            send_frame(conn, 10, data)
-        elif opcode in (0, 1):
-            message += data
-            if first & 0x80:
-                return message.decode("utf-8")
-
-
-def serve_client(conn, model, engine, busy):
-    streams = {}
-    try:
-        if not accept_websocket(conn):
-            return
-        send_frame(conn, 1, json.dumps({"type": "ready", "engine": engine}).encode())
-        while (text := read_text_message(conn)) is not None:
-            message = json.loads(text)
-            try:
-                with busy:  # the models aren't built for two requests at once
-                    replies = handle(model, engine, streams, message)
-            except Exception as error:
-                replies = [{"type": "error", "message": str(error)}]
-            for reply in replies:
-                send_frame(conn, 1, json.dumps({"id": message.get("id"), **reply}, ensure_ascii=False).encode())
-    except (EOFError, OSError, ValueError):
-        pass  # the browser went away or sent something invalid: drop it
-    finally:
-        for stream in streams.values():  # free the live engine for the next connection
-            try:
-                stream.stop()
-            except Exception:
-                pass
-        conn.close()
-
-
-def serve(model, engine):
-    busy = threading.Lock()
-    server = socket.create_server(("127.0.0.1", PORT))  # this computer only
-    print(f"Glossa companion listening on 127.0.0.1:{PORT}", file=sys.stderr, flush=True)
-    while True:
-        conn, _ = server.accept()
-        threading.Thread(target=serve_client, args=(conn, model, engine, busy), daemon=True).start()
-
-
 def main():
     stdin, stdout = sys.stdin.buffer, sys.stdout.buffer
     sys.stdout = sys.stderr  # stray prints must not corrupt the message stream
@@ -347,8 +233,6 @@ def main():
     if "--download" in sys.argv:
         print(f"Model ready: {engine}")
         return
-    if "--serve" in sys.argv:
-        return serve(model, engine)
     write_message(stdout, {"type": "ready", "engine": engine})
     streams = {}  # live streams, by the id of their stream-start
     while (message := read_message(stdin)) is not None:

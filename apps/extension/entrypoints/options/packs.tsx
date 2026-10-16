@@ -134,7 +134,7 @@ export function ChromeSpeechSetup({ enabled, language, onToggle }: { enabled: bo
 }
 
 /** Opt-in switch for the desktop companion (apps/companion), with a connection check. */
-export function CompanionSetup({ enabled, local, onToggle, onLocal }: { enabled: boolean; local: boolean; onToggle: (on: boolean) => void; onLocal: (on: boolean) => void }) {
+export function CompanionSetup({ enabled, onToggle }: { enabled: boolean; onToggle: (on: boolean) => void }) {
   const [status, setStatus] = useState<{ ok: boolean; text: string; needsPermission?: boolean } | null>(null);
   const check = () => {
     setStatus({ ok: true, text: 'Connecting…' });
@@ -143,7 +143,7 @@ export function CompanionSetup({ enabled, local, onToggle, onLocal }: { enabled:
       ({ engine, live }) => setStatus({ ok: true, text: `Connected: ${engine}${live ? `, live: ${live}` : ''}.` }),
       async (error: unknown) => {
         // Reloading or rebuilding an unpacked extension drops its optional permissions, which looks like a missing companion.
-        const granted = local || (await browser.permissions.contains({ permissions: ['nativeMessaging'] }).catch(() => true));
+        const granted = await browser.permissions.contains({ permissions: ['nativeMessaging'] }).catch(() => true);
         const detail = error instanceof Error && error.message ? ` ${error.message}` : '';
         setStatus(
           granted
@@ -155,13 +155,13 @@ export function CompanionSetup({ enabled, local, onToggle, onLocal }: { enabled:
   };
   useEffect(() => {
     if (enabled) check();
-  }, [enabled, local]);
+  }, [enabled]);
 
   // Asked from the click itself: browsers need the user gesture.
   const grant = () => void browser.permissions.request({ permissions: ['nativeMessaging'] }).then((granted) => granted && check());
 
   const toggle = (on: boolean) => {
-    if (!on || local) return onToggle(on);
+    if (!on) return onToggle(false);
     // Asked from the click itself: browsers need the user gesture.
     void browser.permissions.request({ permissions: ['nativeMessaging'] }).then((granted) => granted && onToggle(true));
   };
@@ -175,14 +175,6 @@ export function CompanionSetup({ enabled, local, onToggle, onLocal }: { enabled:
       <span class="muted small block">
         Recognises speech on your own graphics card with a program you install. The audio goes to that program over the browser, never
         over the network. If it can’t be reached, the speech pack is used.
-      </span>
-      <label class="switch">
-        <input type="checkbox" checked={local} onChange={(event) => onLocal(event.currentTarget.checked)} />
-        <span>Reach it over a local port instead</span>
-      </label>
-      <span class="muted small block">
-        For PCs where the browser can’t find the companion. Start it with <code>--serve</code> (see the README). It only accepts
-        connections from this computer and this extension.
       </span>
       {enabled && status && (
         <p class={status.ok ? 'ok' : 'error'}>
