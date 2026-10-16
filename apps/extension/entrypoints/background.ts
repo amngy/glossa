@@ -14,6 +14,9 @@ export default defineBackground(() => {
   /** The tab whose audio is being transcribed. Lost if the browser restarts this worker; the popup then offers Start again. */
   let asrTab: number | null = null;
   const companion = new CompanionSpeechModel();
+  // Which way to reach the companion; every use of it waits for the first read after a worker restart.
+  const transportReady = getSettings().then((settings) => void (companion.local = settings.companionLocal));
+  watchSettings((settings) => void (companion.local = settings.companionLocal));
   const dictionary = new WiktionaryDictionary();
   // Best effort: the browser may stop this worker when idle, which clears the cache.
   const cache = new LruCache<string, Promise<unknown>>(1000);
@@ -138,9 +141,9 @@ export default defineBackground(() => {
       await askOffscreen({ type: 'asr-stop' });
       return null;
     },
-    companionPing: () => companion.ping(),
+    companionPing: () => transportReady.then(() => companion.ping()),
     // Native messaging is only open to extension pages and this worker, not the offscreen document.
-    companionTranscribe: ({ pcm, language }) => companion.transcribe(decodePcm(pcm), { language }),
+    companionTranscribe: ({ pcm, language }) => transportReady.then(() => companion.transcribe(decodePcm(pcm), { language })),
     asrStatus: async () => ({ tabId: asrTab }),
   });
 
@@ -173,7 +176,7 @@ export default defineBackground(() => {
     if (port.name !== COMPANION_STREAM || port.sender?.id !== browser.runtime.id) return;
     let stream: ReturnType<CompanionSpeechModel['stream']> | null = null;
     port.onMessage.addListener((message: CompanionStreamMessage) => {
-      if ('language' in message) stream ??= companion.stream(message.language, (reply) => port.postMessage(reply));
+      if ('language' in message) void transportReady.then(() => (stream ??= companion.stream(message.language, (reply) => port.postMessage(reply))));
       else stream?.push(message.pcm);
     });
     port.onDisconnect.addListener(() => stream?.stop());
