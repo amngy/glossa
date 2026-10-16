@@ -34,7 +34,8 @@ talks to. You can also run every one of those services yourself.
   private. The Listen button reads the word aloud with an on-device voice for its language, if you have
   one. Voices that send the text to an online service are never used.
 - **Line translation.** Each line's translation is shown below it. You can show it, blur it until you hover,
-  or hide it (<kbd>Q</kbd>).
+  or hide it (<kbd>Q</kbd>). Transcribed speech keeps the line before above the current one; its translation
+  is off unless you turn it on in Settings → General.
 - **Made for studying.** The video pauses while your mouse is over the subtitles. It can also pause
   automatically after every line. Jump to the previous or next line, or replay the current one.
 - **Explain a line.** Ask the AI to break down a whole sentence.
