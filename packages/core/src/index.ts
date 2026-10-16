@@ -32,6 +32,7 @@ export {
   type Utterance,
 } from './asr/transcribe';
 export { isWebmInit, WebmDemuxer, type WebmFrame, type WebmTrack } from './asr/webm';
+export { isMp4Init, Mp4Demuxer, type Mp4Frame, type Mp4Track } from './asr/mp4';
 export { localSpeechTag, speechPhrases, startLocalOnly, type LocalRecognizer } from './asr/local-speech';
 
 export {
