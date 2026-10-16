@@ -32,7 +32,7 @@ export {
   type Utterance,
 } from './asr/transcribe';
 export { isWebmInit, WebmDemuxer, type WebmFrame, type WebmTrack } from './asr/webm';
-export { localSpeechTag, startLocalOnly, type LocalRecognizer } from './asr/local-speech';
+export { localSpeechTag, speechPhrases, startLocalOnly, type LocalRecognizer } from './asr/local-speech';
 
 export {
   COMPANION_HOST,

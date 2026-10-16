@@ -1,5 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
-import { localSpeechTag, startLocalOnly } from '../src';
+import { localSpeechTag, speechPhrases, startLocalOnly } from '../src';
+
+describe('speechPhrases', () => {
+  const saved = [
+    { word: '気', lang: 'ja' },
+    { word: 'hola', lang: 'es' },
+    { word: '帰る', lang: 'ja-JP' },
+    { word: '気', lang: 'ja' },
+  ];
+  it('puts the title first, then saved words of that language, newest first, without duplicates', () => {
+    expect(speechPhrases(' 進撃の巨人 ', saved, 'ja')).toEqual(['進撃の巨人', '気', '帰る']);
+  });
+  it('caps the list and skips an empty title', () => {
+    expect(speechPhrases(undefined, saved, 'ja', 1)).toEqual(['気']);
+  });
+});
 
 const track = {} as MediaStreamTrack;
 

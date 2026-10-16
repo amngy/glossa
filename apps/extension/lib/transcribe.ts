@@ -1,10 +1,11 @@
 import { browser, storage, type Browser } from '#imports';
-import { baseLanguage } from '@glossa/core';
+import { baseLanguage, speechPhrases } from '@glossa/core';
 import { CHROME_SPEECH } from './chrome-speech';
 import { sendMessage, type MessageMap } from './messages';
 import { installedSpeechPack } from './packs';
 import { updateSettings, type Settings } from './settings';
 import { startOnTab } from './video-sites';
+import { getVocab } from './vocab-store';
 
 /** The spoken language last transcribed on each site, by host. Apart from Settings, like the video sites. */
 const spokenLanguages = storage.defineItem<Record<string, string>>('local:spokenLanguages', { fallback: {} });
@@ -69,5 +70,6 @@ export async function startTranscribing(
   const streamId = await browser.tabCapture.getMediaStreamId({ targetTabId: tabId });
   // Other sites need Glossa's overlay started first; YouTube's is always there.
   if (!isYouTube(tab.url)) await startOnTab(tabId);
-  await asrStart({ tabId, streamId, language, pack: (settings.chromeSpeech ? CHROME_SPEECH : pack) ?? '' });
+  const phrases = settings.chromeSpeech ? speechPhrases(tab.title, await getVocab(), language) : undefined;
+  await asrStart({ tabId, streamId, language, pack: (settings.chromeSpeech ? CHROME_SPEECH : pack) ?? '', phrases });
 }
