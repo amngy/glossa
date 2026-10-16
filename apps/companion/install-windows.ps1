@@ -2,9 +2,7 @@
 # Run once from this folder:  powershell -ExecutionPolicy Bypass -File install-windows.ps1
 # Add -Download to also fetch the speech models now (about 3 GB from Hugging Face), the Python packages, and
 # for live mode NVIDIA's NeMo-Speech.cpp runtime (about 100 MB from GitHub) with Nemotron 3.5 (about 740 MB).
-# Add -Autostart to also start the local-port server (glossa-companion-server.cmd, for the "local port" setting)
-# when you sign in. Without it, start that file yourself.
-param([switch]$Download, [switch]$Autostart)
+param([switch]$Download)
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
 # Must match the `key` in apps/extension/wxt.config.ts.
@@ -14,16 +12,6 @@ $extensionId = 'ifjnjihdpegigjmpamidpemajjhabbme'
 $uv = (Get-Command uv -ErrorAction Stop).Source
 # --offline: after the first run uv must not contact PyPI each time the browser starts the companion.
 Set-Content "$here\glossa-companion.cmd" "@echo off`r`n`"$uv`" run --offline --quiet --script `"%~dp0glossa_companion.py`"" -Encoding ascii
-
-# The same companion as a local server, for browsers that can't find the native host (Settings → Reach it over a local port).
-Set-Content "$here\glossa-companion-server.cmd" "@echo off`r`n`"$uv`" run --offline --quiet --script `"%~dp0glossa_companion.py`" --serve" -Encoding ascii
-if ($Autostart) {
-  $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("$([Environment]::GetFolderPath('Startup'))\Glossa companion.lnk")
-  $shortcut.TargetPath = "$here\glossa-companion-server.cmd"
-  $shortcut.WorkingDirectory = $here
-  $shortcut.WindowStyle = 7  # minimized
-  $shortcut.Save()
-}
 
 $manifest = @{
   name = 'com.glossa.companion'
