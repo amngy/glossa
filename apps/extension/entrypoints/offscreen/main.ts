@@ -31,7 +31,7 @@ function tellTab(tabId: number, event: AsrEvent): void {
   void browser.runtime.sendMessage({ glossaAsr: true, tabId, event } satisfies AsrEnvelope).catch(() => {});
 }
 
-function startAsr(tabId: number, streamId: string | undefined, language: string, pack: string, notice?: string): Promise<void> {
+function startAsr(tabId: number, streamId: string | undefined, language: string, pack: string, notice?: string, phrases?: string[]): Promise<void> {
   asr?.stop();
   const emit = (event: AsrEvent) => tellTab(tabId, event);
   const onEnd = () => {
@@ -40,7 +40,7 @@ function startAsr(tabId: number, streamId: string | undefined, language: string,
   // Look-ahead (no stream id) feeds decoded audio, which only the Whisper session takes.
   const session = pack === CHROME_SPEECH && streamId ? new ChromeSpeechSession(tabId, emit, onEnd) : new AsrSession(tabId, emit, onEnd);
   asr = session;
-  return (session instanceof ChromeSpeechSession ? session.start(streamId!, language) : session.start(streamId, language, pack, notice)).catch((error: unknown) => {
+  return (session instanceof ChromeSpeechSession ? session.start(streamId!, language, phrases) : session.start(streamId, language, pack, notice)).catch((error: unknown) => {
     tellTab(tabId, { kind: 'error', message: error instanceof Error ? error.message : String(error) });
     session.stop();
   });
@@ -63,7 +63,7 @@ browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =
     return true;
   }
   if (request.type === 'asr-start') {
-    void startAsr(request.tabId, request.streamId, request.language, request.pack, request.notice);
+    void startAsr(request.tabId, request.streamId, request.language, request.pack, request.notice, request.phrases);
     sendResponse({ ok: true, data: null } satisfies OffscreenReply);
     return;
   }
