@@ -70,12 +70,23 @@ def read_pcm(message):
 
 
 def transcribe(model, message):
+    pcm = read_pcm(message)
+    # Over music and noise, Whisper writes subtitle credits ("Altyazı M.K."); the VAD removes non-speech first.
     segments, info = model.transcribe(
-        read_pcm(message), language=message.get("language") or None, beam_size=5, condition_on_previous_text=False
+        pcm,
+        language=message.get("language") or None,
+        beam_size=5,
+        condition_on_previous_text=False,
+        vad_filter=True,
     )
+    # A last segment can run past the clip (a credit line got 14.6-44.6 s on a 15 s clip); the extension then
+    # drops every real line that overlaps that phantom span.
+    length = round(len(pcm) / 16000, 2)
     return {
         "language": info.language,
-        "segments": [{"start": round(s.start, 2), "end": round(s.end, 2), "text": s.text.strip()} for s in segments],
+        "segments": [
+            {"start": round(min(s.start, length), 2), "end": round(min(s.end, length), 2), "text": s.text.strip()} for s in segments
+        ],
     }
 
 
