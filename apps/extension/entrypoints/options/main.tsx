@@ -460,6 +460,14 @@ function Options() {
                     <option value="hide">Hide</option>
                   </select>
                 </Field>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    checked={settings.showPreviousTranslation}
+                    onChange={(event) => change({ showPreviousTranslation: event.currentTarget.checked })}
+                  />
+                  Translate the line before too (transcribed speech keeps it above the current line)
+                </label>
                 <Field label={`Size: ${Math.round(settings.fontScale * 100)}%`}>
                   <input
                     type="range"

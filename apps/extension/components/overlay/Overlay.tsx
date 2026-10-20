@@ -381,13 +381,15 @@ export function Overlay({ store, controller }: { store: Store<OverlayState>; con
         {previous && previousIndex !== undefined && (
           <div class="glossa-previous">
             <Line cue={previous} index={previousIndex} state={state} controller={controller} anchorFor={anchorFor} />
-            <Translation index={previousIndex} state={state} controller={controller} />
+            {settings.showPreviousTranslation && <Translation index={previousIndex} state={state} controller={controller} />}
           </div>
         )}
         {cue && (
-          <Line cue={cue} index={cueIndex} state={state} controller={controller} anchorFor={anchorFor} settledLength={live?.settledLength} />
+          <div class="glossa-current">
+            <Line cue={cue} index={cueIndex} state={state} controller={controller} anchorFor={anchorFor} settledLength={live?.settledLength} />
+            <Translation index={cueIndex} state={state} controller={controller} />
+          </div>
         )}
-        {cue && <Translation index={cueIndex} state={state} controller={controller} />}
         {state.card && <WordCard card={state.card} state={state} controller={controller} />}
       </div>
     </div>

@@ -33,30 +33,38 @@
 
 /* ----- subtitle line ----- */
 
-/* The finished line above the one being recognised: smaller and dimmer, still clickable. */
+/* A line and its translation share one panel, so the subtitles read as one block, not a stack of boxes. */
+.glossa-current,
 .glossa-previous {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  opacity: 0.6;
+  gap: 0.15em;
+  font-size: var(--glossa-font-size);
+  padding: 0.12em 0.5em 0.18em;
+  border-radius: 8px;
+  background: rgba(8, 8, 8, 0.78);
+}
+
+/* The finished line above the one being recognised: smaller and fainter, still clickable. */
+.glossa-previous {
+  background: rgba(8, 8, 8, 0.5);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .glossa-previous .glossa-line {
-  font-size: calc(var(--glossa-font-size) * 0.78);
+  font-size: calc(var(--glossa-font-size) * 0.72);
 }
 
 .glossa-previous .glossa-translation {
-  font-size: calc(var(--glossa-font-size) * 0.6);
+  font-size: calc(var(--glossa-font-size) * 0.56);
+  color: rgba(230, 230, 230, 0.7);
 }
 
 .glossa-line {
   font-size: var(--glossa-font-size);
   line-height: 1.35;
   text-align: center;
-  background: rgba(8, 8, 8, 0.78);
-  padding: 0.08em 0.4em;
-  border-radius: 6px;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
 }
 
@@ -98,12 +106,11 @@ rt {
   font: inherit;
   font-size: calc(var(--glossa-font-size) * 0.72);
   line-height: 1.35;
-  color: #e6e6e6;
+  color: #cfd3da;
   text-align: center;
-  background: rgba(8, 8, 8, 0.62);
-  padding: 0.08em 0.5em;
+  background: none;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
 }
 
 .glossa-blurred {
