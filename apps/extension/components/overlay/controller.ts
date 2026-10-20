@@ -51,6 +51,8 @@ const TRANSLATION_DISPLAY_ORDER: TranslationDisplay[] = ['show', 'blur', 'hide']
 const LINGER_SECONDS = 2;
 /** Recognised lines arrive after they're spoken, so the last one stays up this long, until the next is heard. */
 const TRANSCRIPT_LINGER_SECONDS = 4;
+/** Transcribed lines up to this far ahead of the playhead are translated as soon as they arrive. */
+const TRANSLATE_AHEAD_SECONDS = 60;
 /**
  * A live line that starts this soon after an unfinished one continues its sentence: the joining pause
  * (joinSentences' 1.5 s) plus the half second before the first partial arrives.
@@ -365,6 +367,7 @@ export abstract class SubtitleController {
         if (event.kind === 'lines' && draft?.state === 'done' && cues.length > 0) this.drafts.set(cues.length - 1, draft.value);
         if (this.store.get().trackKey === TRANSCRIPT_KEY) {
           this.extendTrack(cues);
+          this.translateAhead();
           this.store.set({ notice: undefined });
           // A recognised line arrives after it was spoken, so "pause after every line" pauses when it arrives.
           const video = this.video;
@@ -463,6 +466,18 @@ export abstract class SubtitleController {
       }));
       if (kept < old.length) this.translateAround(this.store.get().displayIndex);
     } else this.setTrack({ ...track, cues }, { translationTrack: this.store.get().translationTrack });
+  }
+
+  /**
+   * Translates the lines from the playhead to TRANSLATE_AHEAD_SECONDS ahead, nearest first, so a line
+   * transcribed ahead (look-ahead) is translated before it shows instead of waiting for the model then.
+   */
+  private translateAhead(): void {
+    const cues = this.store.get().track?.cues ?? [];
+    const time = this.video?.currentTime ?? 0;
+    for (let i = Math.max(0, findCueIndexAtOrBefore(cues, time)); i < cues.length && cues[i]!.start < time + TRANSLATE_AHEAD_SECONDS; i++) {
+      this.ensureLineTranslation(i);
+    }
   }
 
   /** Translates the line on screen and the next one, if needed. */
